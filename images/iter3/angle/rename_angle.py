@@ -1,4 +1,5 @@
 import os
+import glob
 import shutil
 from PIL import Image
 
@@ -10,10 +11,7 @@ sets = [
     'peanut'
 ]
 
-sides = [
-'left',
-'right'
-]
+sides = ['left', 'left', 'left', 'right', 'right', 'right', 'left', 'left', 'left',  'right', 'right', 'right']
 
 orientations = [
 'portrait',
@@ -21,29 +19,26 @@ orientations = [
 ]
 
 angles = [
-'60', '45', '30', '30', '45', '60'
+'60', '45', '30', '30', '45', '60', '60', '45', '30', '30', '45', '60'
 ]
 
 curr_dir = os.getcwd()
 files = os.listdir(curr_dir)
+del files[0]
+
+print(len(files), files)
+side = 1
 
 for f in files:
 	index = files.index(f)
-	landscape = 1
+	path = 'granola_'
+
 	if index > 5:
-		index = index - 6
-		landscape = 0
-	path = 'bottle_'
-	if index < 3:
-		path += sides[0] + '_' + angles[index] + '_' 
+		path+= sides[index] + '_' + angles[index] + '_' + orientations[0] + '.jpg'
 	else:
-		path += sides[1] + '_' + angles[index] + '_' 
+		path+= sides[index] + '_' + angles[index] + '_' + orientations[1] + '.jpg'
 
-	if landscape:
-		path += orientations[1] + '.jpg'
-	else: 
-		path += orientations[0]	+ '.jpg'
-
+	print(path)
 	os.rename(f, path)
 
 
