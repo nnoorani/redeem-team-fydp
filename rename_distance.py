@@ -15,7 +15,12 @@ distance = [
     '10',
     '20',
     '30',
+    '37.5',
     '40',
+    '45',
+    '50',
+    '55',
+    '60'
     # '60'
 ]
 
@@ -35,8 +40,8 @@ print (max_width)
 for j in distance:
 	for k in resolution: 
 
-		dst = 'distance_' + j + 'cm_' + k + '.png'
-		src = 'distance_' + j + 'cm.png'
+		dst = j + 'cm_' + k + '.png'
+		src = j + 'cm.png'
 		width_ratio = float(k) / max_width
 		new_height = max_height * width_ratio
 		new_size = (k, new_height)
