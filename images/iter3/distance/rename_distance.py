@@ -6,21 +6,21 @@ from PIL import Image
 sets = [
     # 'bottle',
     # 'bottle_colored',
-    'chips',
-    'granola',
-    'peanut'
+    # 'chips',
+    # 'granola',
+    # 'peanut'
 ]
 
 distance = [
     '10',
-    '25',
-    '37.5',
-    '50',
-    '60'
+    '20',
+    '30',
+    '40',
+    # '60'
 ]
 
 resolution = [
-'1280',
+# '1280',
 '1024',
 '800',
 '640',
@@ -32,12 +32,11 @@ max_width, max_height = test_img.size
 print (max_height)
 print (max_width)
 
-for i in sets: 
-	for j in distance:
-		for k in resolution: 
+for j in distance:
+	for k in resolution: 
 
-			dst = i + '_' + j + 'cm_0degree_' + k + '.jpg'
-			src = i + '_' + j + 'cm_0degree.jpg'
+			dst = 'distance_' + j + 'cm_' + k + '.jpg'
+			src = 'distance_' + j + 'cm.jpg'
 			width_ratio = float(k) / max_width
 			new_height = max_height * width_ratio
 			new_size = (k, new_height)
