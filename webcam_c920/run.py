@@ -97,7 +97,6 @@ def process (theimage):
 cam, x, y = initialize_camera()
 set_resolution(cam, 2304,1536)
 
-
 # (2304,1536)
 path = ''
 for k in range(0,15):
@@ -106,5 +105,6 @@ for k in range(0,15):
     print path
     process(path)
     
-
+velocity = 1.4
+distance = 0.11
 
