@@ -61,7 +61,7 @@ def set_exposure(cam, exp):
 max_x = '1280'
 max_y = '960'
 cam, x, y = initialize_camera()
-set_resolution(cam, '640', '320')
+set_resolution(cam, '2304', '1536')
 # single_cap(cam)
 test_fps(cam)
 
