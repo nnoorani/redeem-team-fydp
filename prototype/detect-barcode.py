@@ -6,11 +6,11 @@ import os
 import zbar
 from urllib2 import Request, urlopen, URLError
 
-global capture_images, im_array, exporting, export_array
+global capture_images, im_array, exported, export_array
 im_array = [] #array that will collect all the pictures in real-time
-export_array = [] #after we stop taking pictures, put all images to be exporting in here so im_array can take mroe images
+export_array = [] #after we stop taking pictures, put all images to be exported in here so im_array can take mroe images
 capture_images = False #don't start off taking pictures
-exporting = False
+exported = True
 
 def initialize_camera():
 	# initializes camera using openCV
@@ -41,9 +41,8 @@ def capture(cam):
 				im_array.append(im)
 
 def export_photos(array, timestamp):
-	exporting = True
 	# takes an array of image files and a timestamp and creates folder using the timestamp, exports to there
-	global exporting
+	global exported
 	#making the folder and cd into it
 	path = str(timestamp)
 	os.makedirs(path)
@@ -55,13 +54,13 @@ def export_photos(array, timestamp):
 			im_width, im_height = image.size
 	#change back to parent directory
 	os.chdir("../")
-	exporting = False
+	exported = True
 	# use the path to scan the images in the folder we just made
 	# scan_images(path)
 
 def get_user_input():
 	# controls whether or not we are taking pictures right now
-	global capture_images, export_array, im_array, exporting
+	global capture_images, export_array, im_array, exported
 	while True:
 		#always asking for user input to control
 		x = raw_input('Press Enter to toggle picture taking')
@@ -71,8 +70,8 @@ def get_user_input():
 				# if already taking pictures, turn it off
 				capture_images = False
 				print 'stop capturing'
-				#if we haven't already exporting, export the pictures by the timestamp
-				if exporting == False:
+				#if we haven't already exported, export the pictures by the timestamp
+				if exported == False:
 					print 'exporting'
 					timestamp = time.time()
 					export_array = im_array
@@ -80,8 +79,10 @@ def get_user_input():
 					#empty image array again so we can take more pictures while exporting happens
 					im_array = []
 			else:
-				# if not taking pictures right now, wait till exporting True
+				# if not taking pictures right now, wait till exported True
+
 				capture_images = True
+				exported = False
 
 # def scan_images(path):
 # 	# print os.getcwd()

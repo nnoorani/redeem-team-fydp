@@ -1,0 +1,17 @@
+def output_products(products):
+	info_keys = ['itemname', 'description', 'number']
+	product_array = []
+
+	for key in products:
+		value = products[key]
+		print value
+		# if value[info_keys[0]]:
+		# 	product_array.append(value[info_keys[0]])
+		# elif value[info_keys[1]]:
+		# 	product_array.append(value[info_keys[1]])
+		# else:
+		# 	product_array.append(value[info_keys[2]])
+
+	print product_array
+
+	

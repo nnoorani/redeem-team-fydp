@@ -83,27 +83,32 @@ def get_user_input():
 				# if not taking pictures right now, wait till exporting True
 				capture_images = True
 
-# def scan_images(path):
-# 	# print os.getcwd()
-# 	# print path
-# 	# scanner = zbar.ImageScanner()
-# 	# scanner.parse_config('enable')
-# 	# barcodes = {}
-# 	# for i in os.listdir(path):
-# 	# 	image = Image.open(i)
-# 	# 	if scanner.scan(i):
-# 	# 	# extract results
-# 	# 	    for symbol in image:
-# 	# 	    # do something useful with results
-# 	# 	        print 'decoded', symbol.type, 'symbol', '"%s"' % symbol.data
-# 	# 	        barcodes[path] = symbol.data
-# 	# 	        product_lookup("9780563532798")
-# 	# 	else:
-# 	# 	    print 'did not decode'
-# 	barcodes = {}
-# 	barcodes[0] = "0052000208061"
-# 	barcodes[1] = "0685349924158"
-# 	product_lookup(barcodes)
+def scan_images(path):
+	# print os.getcwd()
+	# print path
+	os.chdir(str(path))
+	scanner = zbar.ImageScanner()
+	scanner.parse_config('enable')
+
+	barcodes = {}
+	for i in os.listdir(os.getcwd()):
+		pil = Image.open(i).convert('L')
+		width, height = pil.size
+		raw = pil.tostring()
+		image = zbar.Image(width, height, 'Y800', raw)
+		
+		if scanner.scan(image):
+		# extract results
+		    for symbol in image:
+		    	image = Image.open(i)
+		    # do something useful with results
+		        print 'decoded', symbol.type, 'symbol', '"%s"' % symbol.data
+		        barcodes[path] = symbol.data
+		        # get_object_image(symbol.data, barcodes)
+		else:
+		    print 'did not decode'
+	os.chdir("../")
+	
 
 # def product_lookup(barcodes):
 # 	products = {}
@@ -123,21 +128,7 @@ def get_user_input():
 # 	print products
 # 	output_products(products)
 
-# def output_products(products):
-# 	info_keys = ['itemname', 'description', 'number']
-# 	product_array = []
 
-	# for key in products:
-	# 	value = products[key]
-	# 	print value
-	# 	# if value[info_keys[0]]:
-	# 	# 	product_array.append(value[info_keys[0]])
-	# 	# elif value[info_keys[1]]:
-	# 	# 	product_array.append(value[info_keys[1]])
-	# 	# else:
-	# 	# 	product_array.append(value[info_keys[2]])
-
-	# print product_array
 
 cam, x, y = initialize_camera()
 set_resolution(cam, 2304, 1536)
