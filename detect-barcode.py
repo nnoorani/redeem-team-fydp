@@ -17,8 +17,9 @@ database = {
 
 def initialize_camera():
 	# initializes camera using openCV
-	# returns the width, height, and camera object 
-	cam = cv2.VideoCapture(0)
+	#returns the width, height, and camera object 
+	cam = cv2.VideoCapture(1)
+	cam.set(5, 8)
 	if cam.isOpened():
 		print 'camera found'
 
@@ -63,8 +64,7 @@ def export_photos(array, timestamp):
 	os.chdir("../")
 	exporting = False
 	# use the path to scan the images in the folder we just made
-	scan_images_mac(path)
-	return
+	scan_images(path)
 
 def get_user_input():
 	global im_array, capture_images, exporting
@@ -141,7 +141,8 @@ def product_lookup(barcodes):
 		image.show()		
 
 cam, x, y = initialize_camera()
-set_resolution(cam, 2304, 1536)
+# set_resolution(cam, 2304, 1536)
+set_resolution(cam, 1900, 1080)
 thread.start_new_thread(capture, (cam,))
 thread.start_new_thread(get_user_input, ())
 
