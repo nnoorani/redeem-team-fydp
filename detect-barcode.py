@@ -4,7 +4,6 @@ from PIL import Image
 import thread
 import os
 import zbar
-from urllib2 import Request, urlopen, URLError
 
 im_array = [] # array that will collect all the pictures in real-time
 capture_images = False # don't start off taking pictures
@@ -13,6 +12,13 @@ exporting = False
 database = {
 	"6820020094" : "products/chocolate-milk.jpg",
 	"06741806" : "products/fanta.jpg"
+	"06782900" : "products/coke.jpg"
+	"064200150224" : "products/spaghetti.jpg"
+	"058496423346" : "products/uncleben.jpg"
+	"060383674304": "products/tomatoes.jpg"
+	"066721020376" : "products/triscuit.jpg"
+	"060410014431" : "products/pretzel.jpg"
+
 }
 
 def initialize_camera():
@@ -21,13 +27,7 @@ def initialize_camera():
 	cam = cv2.VideoCapture(1)
 	cam.set(5, 8)
 	if cam.isOpened():
-		print 'camera found'
-
-		width = cam.get(3)
-		height = cam.get(4)
-		return cam, width, height
-	else:
-		return False
+		return cam
 
 def set_resolution(cam, x, y):
 	# sets resolution for camera to take pictures with
@@ -58,8 +58,6 @@ def export_photos(array, timestamp):
 	for k in range (0, len(array)):
 		filename = str(k) + ".png"
 		cv2.imwrite(filename, array[k])
-		image = Image.open(filename)
-		im_width, im_height = image.size
 	#change back to parent directory
 	os.chdir("../")
 	exporting = False
@@ -137,10 +135,14 @@ def select_barcodes(barcodes):
 
 def product_lookup(barcodes):
 	for i in barcodes:
-		image = Image.open(database[i])
-		image.show()		
+		image = database[i]
+		if image: 
+			prod_img = ImageScannerage.open(database[i])
+			prod_img.show()
 
-cam, x, y = initialize_camera()
+
+
+cam = initialize_camera()
 # set_resolution(cam, 2304, 1536)
 set_resolution(cam, 1900, 1080)
 thread.start_new_thread(capture, (cam,))
