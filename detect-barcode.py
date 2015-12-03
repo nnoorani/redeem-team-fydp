@@ -6,15 +6,18 @@ import os
 import zbar
 from urllib2 import Request, urlopen, URLError
 
-global capture_images, im_array, exporting, export_array
-im_array = [] #array that will collect all the pictures in real-time
-export_array = [] #after we stop taking pictures, put all images to be exporting in here so im_array can take mroe images
-capture_images = False #don't start off taking pictures
+im_array = [] # array that will collect all the pictures in real-time
+capture_images = False # don't start off taking pictures
 exporting = False
+
+database = {
+	"6820020094" : "products/chocolate-milk.jpg",
+	"06741806" : "products/fanta.jpg"
+}
 
 def initialize_camera():
 	# initializes camera using openCV
-	#returns the width, height, and camera object 
+	# returns the width, height, and camera object 
 	cam = cv2.VideoCapture(0)
 	if cam.isOpened():
 		print 'camera found'
@@ -26,14 +29,15 @@ def initialize_camera():
 		return False
 
 def set_resolution(cam, x, y):
-	#sets resolution for camera to take pictures with
+	# sets resolution for camera to take pictures with
 	cam.set(3,int(x))
 	cam.set(4,int(y))
 
 def capture(cam):
 	# runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
+	global im_array
 	while True:
-		if capture_images and not exporting:
+		if capture_images:
 			# if we are supposed to be taking pictures right now
 			print 'taking pictures'			
 			if cam.isOpened():
@@ -41,27 +45,30 @@ def capture(cam):
 				im_array.append(im)
 
 def export_photos(array, timestamp):
+	global exporting
+	print len(array)
+	print timestamp
 	exporting = True
 	# takes an array of image files and a timestamp and creates folder using the timestamp, exports to there
-	global exporting
-	#making the folder and cd into it
+	# making the folder and cd into it
 	path = str(timestamp)
 	os.makedirs(path)
 	os.chdir(path)
 	for k in range (0, len(array)):
-			filename = str(k) + ".png"
-			cv2.imwrite(filename, array[k])
-			image = Image.open(filename)
-			im_width, im_height = image.size
+		filename = str(k) + ".png"
+		cv2.imwrite(filename, array[k])
+		image = Image.open(filename)
+		im_width, im_height = image.size
 	#change back to parent directory
 	os.chdir("../")
 	exporting = False
 	# use the path to scan the images in the folder we just made
-	# scan_images(path)
+	scan_images_mac(path)
+	return
 
 def get_user_input():
+	global im_array, capture_images, exporting
 	# controls whether or not we are taking pictures right now
-	global capture_images, export_array, im_array, exporting
 	while True:
 		#always asking for user input to control
 		x = raw_input('Press Enter to toggle picture taking')
@@ -70,15 +77,12 @@ def get_user_input():
 			if capture_images:
 				# if already taking pictures, turn it off
 				capture_images = False
-				print 'stop capturing'
-				#if we haven't already exporting, export the pictures by the timestamp
-				if exporting == False:
-					print 'exporting'
-					timestamp = time.time()
-					export_array = im_array
-					export_photos(export_array, timestamp)
-					#empty image array again so we can take more pictures while exporting happens
-					im_array = []
+				timestamp = time.time()
+				print 'previous image array length is %d' % len(im_array)
+				export_array = im_array
+				im_array = []
+				print 'now it is %d and the image array length is %s' % (len(export_array), len(im_array))
+				thread.start_new_thread(export_photos, (export_array, timestamp))
 			else:
 				# if not taking pictures right now, wait till exporting True
 				capture_images = True
@@ -90,7 +94,7 @@ def scan_images(path):
 	scanner = zbar.ImageScanner()
 	scanner.parse_config('enable')
 
-	barcodes = {}
+	barcodes = []
 	for i in os.listdir(os.getcwd()):
 		pil = Image.open(i).convert('L')
 		width, height = pil.size
@@ -103,32 +107,38 @@ def scan_images(path):
 		    	image = Image.open(i)
 		    # do something useful with results
 		        print 'decoded', symbol.type, 'symbol', '"%s"' % symbol.data
-		        barcodes[path] = symbol.data
+		        barcodes.append(symbol.data)
 		        # get_object_image(symbol.data, barcodes)
 		else:
 		    print 'did not decode'
 	os.chdir("../")
-	
-
-# def product_lookup(barcodes):
-# 	products = {}
-# 	api_key = '71464f908e5cbbca2d80354d95104666'
-# 	url = 'http://api.upcdatabase.org/json/'
-
-# 	for key,value in barcodes.iteritems():
-# 		path = url + api_key + '/' + str(value)
-# 		request = Request(path)
-
-# 		try:
-# 			response = urlopen(request)
-# 			product_info = response.read()
-# 			products[value] = product_info
-# 		except URLError, e:
-# 			print 'no product_info found'
-# 	print products
-# 	output_products(products)
+	final_list = select_barcodes(barcodes)
+	product_lookup(final_list)
 
 
+def scan_images_mac(path):
+	print 'hello output'
+	print os.listdir(path)
+	for i in os.listdir(path):
+		command = "zbarimg -q " + path + '/' + i
+		output = os.system(command)
+	found_barcodes = ["6820020094", "6820020094"]
+	final_list = select_barcodes(found_barcodes)
+	product_lookup(final_list)
+
+def select_barcodes(barcodes): 
+	barcodes_to_lookup = []
+	for j in range(0,len(barcodes)):
+	    for l in range(j+1,len(barcodes)):
+	        if barcodes[j] == barcodes[l]:
+	           barcodes_to_lookup.append(barcodes[j])
+	print barcodes_to_lookup
+	return barcodes_to_lookup
+
+def product_lookup(barcodes):
+	for i in barcodes:
+		image = Image.open(database[i])
+		image.show()		
 
 cam, x, y = initialize_camera()
 set_resolution(cam, 2304, 1536)
