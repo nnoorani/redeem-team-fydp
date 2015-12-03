@@ -15,7 +15,8 @@ exporting = False
 def initialize_camera():
 	# initializes camera using openCV
 	#returns the width, height, and camera object 
-	cam = cv2.VideoCapture(0)
+	cam = cv2.VideoCapture(1)
+	cam.set(5, 8)
 	if cam.isOpened():
 		print 'camera found'
 
@@ -34,8 +35,7 @@ def capture(cam):
 	# runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
 	while True:
 		if capture_images and not exporting:
-			# if we are supposed to be taking pictures right now
-			print 'taking pictures'			
+			# if we are supposed to be taking pictures right now		
 			if cam.isOpened():
 				retval, im = cam.read()
 				im_array.append(im)
@@ -57,7 +57,7 @@ def export_photos(array, timestamp):
 	os.chdir("../")
 	exporting = False
 	# use the path to scan the images in the folder we just made
-	# scan_images(path)
+	scan_images(path)
 
 def get_user_input():
 	# controls whether or not we are taking pictures right now
@@ -76,9 +76,10 @@ def get_user_input():
 					print 'exporting'
 					timestamp = time.time()
 					export_array = im_array
+					im_array = []
 					export_photos(export_array, timestamp)
 					#empty image array again so we can take more pictures while exporting happens
-					im_array = []
+					
 			else:
 				# if not taking pictures right now, wait till exporting True
 				capture_images = True
@@ -131,7 +132,8 @@ def scan_images(path):
 
 
 cam, x, y = initialize_camera()
-set_resolution(cam, 2304, 1536)
+# set_resolution(cam, 2304, 1536)
+set_resolution(cam, 1900, 1080)
 thread.start_new_thread(capture, (cam,))
 thread.start_new_thread(get_user_input, ())
 
