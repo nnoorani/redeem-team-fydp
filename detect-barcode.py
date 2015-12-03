@@ -11,12 +11,12 @@ exporting = False
 
 database = {
 	"6820020094" : "products/chocolate-milk.jpg",
-	"06741806" : "products/fanta.jpg"
-	"06782900" : "products/coke.jpg"
-	"064200150224" : "products/spaghetti.jpg"
-	"058496423346" : "products/uncleben.jpg"
-	"060383674304": "products/tomatoes.jpg"
-	"066721020376" : "products/triscuit.jpg"
+	"06741806" : "products/fanta.jpg",
+	"06782900" : "products/coke.jpg",
+	"064200150224" : "products/spaghetti.jpg",
+	"058496423346" : "products/uncleben.jpg",
+	"060383674304": "products/tomatoes.jpg",
+	"066721020376" : "products/triscuit.jpg",
 	"060410014431" : "products/pretzel.jpg"
 
 }
@@ -47,8 +47,8 @@ def capture(cam):
 
 def export_photos(array, timestamp):
 	global exporting
-	print len(array)
-	print timestamp
+	# print len(array)
+	# print timestamp
 	exporting = True
 	# takes an array of image files and a timestamp and creates folder using the timestamp, exports to there
 	# making the folder and cd into it
@@ -76,10 +76,10 @@ def get_user_input():
 				# if already taking pictures, turn it off
 				capture_images = False
 				timestamp = time.time()
-				print 'previous image array length is %d' % len(im_array)
+				# print 'previous image array length is %d' % len(im_array)
 				export_array = im_array
 				im_array = []
-				print 'now it is %d and the image array length is %s' % (len(export_array), len(im_array))
+				# print 'now it is %d and the image array length is %s' % (len(export_array), len(im_array))
 				thread.start_new_thread(export_photos, (export_array, timestamp))
 			else:
 				# if not taking pictures right now, wait till exporting True
@@ -109,6 +109,7 @@ def scan_images(path):
 		        # get_object_image(symbol.data, barcodes)
 		else:
 		    print 'did not decode'
+		    # print ""
 	os.chdir("../")
 	final_list = select_barcodes(barcodes)
 	product_lookup(final_list)
@@ -125,22 +126,21 @@ def scan_images_mac(path):
 	product_lookup(final_list)
 
 def select_barcodes(barcodes): 
-	barcodes_to_lookup = []
-	for j in range(0,len(barcodes)):
+	for j in range(2,len(barcodes)):
 	    for l in range(j+1,len(barcodes)):
 	        if barcodes[j] == barcodes[l]:
-	           barcodes_to_lookup.append(barcodes[j])
-	print barcodes_to_lookup
-	return barcodes_to_lookup
+	           return barcodes[j]
 
-def product_lookup(barcodes):
-	for i in barcodes:
-		image = database[i]
-		if image: 
-			prod_img = ImageScannerage.open(database[i])
-			prod_img.show()
-
-
+def product_lookup(barcode):
+	print barcode
+	if barcode:
+		if database.has_key(barcode):
+			print database[barcode]
+			product_img = cv2.imread(database[barcode]);
+			cv2.imshow('product', product_img)
+			cv2.waitKey(0)
+		else:
+			print "Image for this barcode does not exist yet"
 
 cam = initialize_camera()
 # set_resolution(cam, 2304, 1536)
