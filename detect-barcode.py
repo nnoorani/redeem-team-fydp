@@ -4,7 +4,6 @@ from PIL import Image
 import threading
 import os
 import zbar
-from urllib2 import Request, urlopen, URLError
 
 im_array = [] # array that will collect all the pictures in real-time
 capture_images = False # don't start off taking pictures
@@ -14,7 +13,14 @@ capture_completed = threading.Event()
 
 database = {
 	"6820020094" : "products/chocolate-milk.jpg",
-	"06741806" : "products/fanta.jpg"
+	"06741806" : "products/fanta.jpg",
+	"06782900" : "products/coke.jpg",
+	"064200150224" : "products/spaghetti.jpg",
+	"058496423346" : "products/uncleben.jpg",
+	"060383674304": "products/tomatoes.jpg",
+	"066721020376" : "products/triscuit.jpg",
+	"060410014431" : "products/pretzel.jpg"
+
 }
 
 def initialize_camera():
@@ -22,7 +28,6 @@ def initialize_camera():
 	#returns the width, height, and camera object 
 	cam = cv2.VideoCapture(0)
 	if cam.isOpened():
-		print 'camera found'
 		return cam
 
 def set_resolution(cam, x, y):
@@ -47,7 +52,6 @@ def capture(cam):
 
 def export_photos(array, timestamp):
 	global exporting
-	print timestamp
 	exporting = True
 	# takes an array of image files and a timestamp and creates folder using the timestamp, exports to there
 	# making the folder and cd into it
@@ -57,8 +61,6 @@ def export_photos(array, timestamp):
 	for k in range (0, len(array)):
 		filename = str(k) + ".png"
 		cv2.imwrite(filename, array[k])
-		image = Image.open(filename)
-		im_width, im_height = image.size
 	#change back to parent directory
 	os.chdir("../")
 	exporting = False
@@ -110,6 +112,7 @@ def scan_images(path):
 		        # get_object_image(symbol.data, barcodes)
 		else:
 		    print 'did not decode'
+		    # print ""
 	os.chdir("../")
 	final_list = select_barcodes(barcodes)
 	product_lookup(final_list)
@@ -125,20 +128,24 @@ def scan_images_mac(path):
 	# product_lookup(final_list)
 
 def select_barcodes(barcodes): 
-	barcodes_to_lookup = []
-	for j in range(0,len(barcodes)):
+	for j in range(2,len(barcodes)):
 	    for l in range(j+1,len(barcodes)):
 	        if barcodes[j] == barcodes[l]:
-	           barcodes_to_lookup.append(barcodes[j])
-	return barcodes_to_lookup
+	           return barcodes[j]
 
-def product_lookup(barcodes):
-	for i in barcodes:
-		if database[i]:
-			image = Image.open(database[i])
-			image.show()	
+def product_lookup(barcode):
+	print barcode
+	if barcode:
+		if database.has_key(barcode):
+			print database[barcode]
+			product_img = cv2.imread(database[barcode]);
+			cv2.imshow('product', product_img)
+			cv2.waitKey(0)
+		else:
+			print "Image for this barcode does not exist yet"
 
 cam = initialize_camera()
+# set_resolution(cam, 2304, 1536)
 set_resolution(cam, 1900, 1080)
 
 capture_thread = threading.Thread(target=capture, args=(cam,))
