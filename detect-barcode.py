@@ -1,14 +1,16 @@
 import cv2
 import time
 from PIL import Image
-import thread
+import threading
 import os
 import zbar
 from urllib2 import Request, urlopen, URLError
 
 im_array = [] # array that will collect all the pictures in real-time
 capture_images = False # don't start off taking pictures
+capture_completed = 0
 exporting = False
+capture_completed = threading.Event()
 
 database = {
 	"6820020094" : "products/chocolate-milk.jpg",
@@ -18,16 +20,10 @@ database = {
 def initialize_camera():
 	# initializes camera using openCV
 	#returns the width, height, and camera object 
-	cam = cv2.VideoCapture(1)
-	cam.set(5, 8)
+	cam = cv2.VideoCapture(0)
 	if cam.isOpened():
 		print 'camera found'
-
-		width = cam.get(3)
-		height = cam.get(4)
-		return cam, width, height
-	else:
-		return False
+		return cam
 
 def set_resolution(cam, x, y):
 	# sets resolution for camera to take pictures with
@@ -37,17 +33,20 @@ def set_resolution(cam, x, y):
 def capture(cam):
 	# runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
 	global im_array
+	global capture_completed
 	while True:
 		if capture_images:
-			# if we are supposed to be taking pictures right now
-			print 'taking pictures'			
+			# if we are supposed to be taking pictures right now		
 			if cam.isOpened():
+				print 'taking pictures'
+				capture_completed.clear()
 				retval, im = cam.read()
 				im_array.append(im)
+				print "image array length is %s" % len(im_array)
+				capture_completed.set()
 
 def export_photos(array, timestamp):
 	global exporting
-	print len(array)
 	print timestamp
 	exporting = True
 	# takes an array of image files and a timestamp and creates folder using the timestamp, exports to there
@@ -67,22 +66,22 @@ def export_photos(array, timestamp):
 	scan_images(path)
 
 def get_user_input():
-	global im_array, capture_images, exporting
+	global im_array, capture_images, exporting, capture_completed
 	# controls whether or not we are taking pictures right now
 	while True:
 		#always asking for user input to control
 		x = raw_input('Press Enter to toggle picture taking')
+		print x
 		if not x:
 			#happens when you press Enter
 			if capture_images:
 				# if already taking pictures, turn it off
 				capture_images = False
+				capture_completed.wait()
 				timestamp = time.time()
-				print 'previous image array length is %d' % len(im_array)
 				export_array = im_array
-				im_array = []
-				print 'now it is %d and the image array length is %s' % (len(export_array), len(im_array))
-				thread.start_new_thread(export_photos, (export_array, timestamp))
+				im_array = []				
+				threading.Thread(target=export_photos, args=(export_array, timestamp)).start()
 			else:
 				# if not taking pictures right now, wait till exporting True
 				capture_images = True
@@ -117,14 +116,13 @@ def scan_images(path):
 
 
 def scan_images_mac(path):
-	print 'hello output'
 	print os.listdir(path)
 	for i in os.listdir(path):
 		command = "zbarimg -q " + path + '/' + i
 		output = os.system(command)
-	found_barcodes = ["6820020094", "6820020094"]
-	final_list = select_barcodes(found_barcodes)
-	product_lookup(final_list)
+	found_barcodes = ["682002009", "6820020094"]
+	# final_list = select_barcodes(found_barcodes)
+	# product_lookup(final_list)
 
 def select_barcodes(barcodes): 
 	barcodes_to_lookup = []
@@ -132,19 +130,26 @@ def select_barcodes(barcodes):
 	    for l in range(j+1,len(barcodes)):
 	        if barcodes[j] == barcodes[l]:
 	           barcodes_to_lookup.append(barcodes[j])
-	print barcodes_to_lookup
 	return barcodes_to_lookup
 
 def product_lookup(barcodes):
 	for i in barcodes:
-		image = Image.open(database[i])
-		image.show()		
+		if database[i]:
+			image = Image.open(database[i])
+			image.show()	
 
-cam, x, y = initialize_camera()
-# set_resolution(cam, 2304, 1536)
+cam = initialize_camera()
 set_resolution(cam, 1900, 1080)
-thread.start_new_thread(capture, (cam,))
-thread.start_new_thread(get_user_input, ())
 
-while True:
-	pass	
+capture_thread = threading.Thread(target=capture, args=(cam,))
+capture_thread.setDaemon(True)
+user_input_thread = threading.Thread(target=get_user_input, args=())
+user_input_thread.setDaemon(True)
+capture_thread.start()
+user_input_thread.start()
+
+try:
+	while True:
+		pass	
+except (KeyboardInterrupt, SystemExit):
+  print '\n! Received keyboard interrupt, quitting threads.\n'

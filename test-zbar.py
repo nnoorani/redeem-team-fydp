@@ -1,3 +1,0 @@
-import zbar
-
-print zbar
