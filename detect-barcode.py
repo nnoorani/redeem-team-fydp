@@ -28,6 +28,7 @@ def initialize_camera():
 	#returns the width, height, and camera object 
 	cam = cv2.VideoCapture(0)
 	if cam.isOpened():
+		cam.set(5, 8)
 		return cam
 
 def set_resolution(cam, x, y):
