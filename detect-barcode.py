@@ -64,7 +64,7 @@ def export_photos(array, timestamp):
 		cv2.imwrite(path + '/' + filename, array[k])
 	exporting = False
 	# use the path to scan the images in the folder we just made
-	scan_images_mac(path)
+	scan_images(path)
 
 def get_user_input():
 	global im_array, capture_images, exporting, capture_completed
@@ -89,8 +89,8 @@ def get_user_input():
 				capture_images = True
 
 def scan_images(path):
-	# print os.getcwd()
-	# print path
+	print os.getcwd()
+	print path
 	scanner = zbar.ImageScanner()
 	scanner.parse_config('enable')
 	found_symbol = ""
@@ -99,7 +99,7 @@ def scan_images(path):
 	barcodes = []
 	files = [f for f in os.listdir(path)]
 	for i in files:
-		pil = Image.open(i).convert('L')
+		pil = Image.open(path+ '/' + i).convert('L')
 		width, height = pil.size
 		raw = pil.tostring()
 		image = zbar.Image(width, height, 'Y800', raw)
@@ -108,15 +108,17 @@ def scan_images(path):
 		# extract results
 		    for symbol in image:
 		    	print 'decoded', symbol.type, 'symbol', '"%s"' % symbol.data
-		    	if (found_symbol and (symbol == found_symbol)):
+		    	if (found_symbol and (symbol.data == found_symbol)):
 		    		print "success, validated barcode"
 		    		barcode_validated = True
 		    		break
 		    	else: 
-		    		found_symbol = symbol
+		    		found_symbol = symbol.data
 		else:
 		    print 'did not decode'
 		
+		print 'exit symbol loop'
+		print barcode_validated
 		if barcode_validated:
 			break
 
