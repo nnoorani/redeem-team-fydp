@@ -20,12 +20,11 @@ database = {
 	"060383674304": "products/tomatoes.jpg",
 	"066721020376" : "products/triscuit.jpg",
 	"060410014431" : "products/pretzel.jpg"
-
 }
 
-def initialize_camera():
+def initialize_cameras():
 	# initializes camera using openCV
-	#returns the width, height, and camera object 
+	#returns camera object 
 	cam = cv2.VideoCapture(0)
 	if cam.isOpened():
 		cam.set(5, 8)
@@ -67,6 +66,7 @@ def export_photos(array, timestamp):
 	scan_images(path)
 
 def get_user_input():
+	# this method will eventually be obsoletes
 	global im_array, capture_images, exporting, capture_completed
 	# controls whether or not we are taking pictures right now
 	while True:
@@ -89,15 +89,16 @@ def get_user_input():
 				capture_images = True
 
 def scan_images(path):
-	print os.getcwd()
-	print path
 	scanner = zbar.ImageScanner()
 	scanner.parse_config('enable')
+
+	#used for validating two barcodes
 	found_symbol = ""
-	found_image = ""
 	barcode_validated = False
-	barcodes = []
+	
+	# array of all pictures taken
 	files = [f for f in os.listdir(path)]
+
 	for i in files:
 		pil = Image.open(path+ '/' + i).convert('L')
 		width, height = pil.size
@@ -127,20 +128,18 @@ def scan_images(path):
 	final_list = select_barcodes(barcodes)
 	# product_lookup(final_list)
 
-def scan_images_mac(path):
-	print os.listdir(path)
-	for i in os.listdir(path):
-		command = "zbarimg -q " + path + '/' + i
-		output = os.system(command)
-	found_barcodes = ["682002009", "6820020094", "6820020093", "6820020094"]
-	final_list = select_barcodes(found_barcodes)
-	# product_lookup(final_list)
+def check_for_object_presence(im):	
+	height, width = im.shape[:2]
+	print width
+	print height
+	print im[1070,10]
 
-def select_barcodes(barcodes): 
-	for j in range(2,len(barcodes)):
-	    for l in range(j+1,len(barcodes)):
-	        if barcodes[j] == barcodes[l]:
-	           return barcodes[j]
+	# check if certain pixel is a certain colour or within a range, and if yes, then return bool no
+	# if no check the rest of the pixels
+	# if all of them don't match
+	# return bool yes
+
+	#function returns bool which will signal if we should start taking pictures that will be analyzed
 
 def product_lookup(barcode):
 	print barcode
@@ -154,16 +153,19 @@ def product_lookup(barcode):
 			print "Image for this barcode does not exist yet"
 
 cam = initialize_camera()
-# set_resolution(cam, 2304, 1536)
 set_resolution(cam, 1900, 1080)
 
+#creating threads for capturing and getting user input
 capture_thread = threading.Thread(target=capture, args=(cam,))
 capture_thread.setDaemon(True)
 user_input_thread = threading.Thread(target=get_user_input, args=())
 user_input_thread.setDaemon(True)
+
+#start the threads
 capture_thread.start()
 user_input_thread.start()
 
+#keep the application running
 try:
 	while True:
 		pass	
