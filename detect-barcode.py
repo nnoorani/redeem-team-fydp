@@ -56,6 +56,7 @@ def export_photos(im, timestamp, k):
 	
 	path = str(timestamp)
 	if not os.path.isdir(path):
+		print "hello"
 		os.mkdir(path)
 	
 	filename = str(k) + ".png"
