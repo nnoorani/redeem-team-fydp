@@ -35,7 +35,9 @@ def set_resolution(cam, x, y):
 	cam.set(3,int(x))
 	cam.set(4,int(y))
 
-def capture(cam):
+def capture(cam, timestamp):
+	k = 0
+	frame_rate = 1
 	# runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
 	global im_array
 	global capture_completed
@@ -47,8 +49,9 @@ def capture(cam):
 				print 'taking pictures'
 				capture_completed.clear()
 				retval, im = cam.read()
-				im_array.append(im)
-				print "image array length is %s" % len(im_array)
+				threading.Thread(target=export_photos, args=(im,timestamp,k)).start()
+				time.sleep(frame_rate)
+				print "done"
 				capture_completed.set()
 
 def export_photos(array, timestamp):
@@ -63,7 +66,7 @@ def export_photos(array, timestamp):
 		cv2.imwrite(path + '/' + filename, array[k])
 	exporting = False
 	# use the path to scan the images in the folder we just made
-	scan_images(path)
+	scan_images(path,filename,timestamp)
 
 def get_user_input():
 	# this method will eventually be obsoletes
@@ -123,23 +126,50 @@ def scan_images(path):
 		if barcode_validated:
 			break
 
-	print "exited scanning loop"
-	os.chdir("../")
-	final_list = select_barcodes(barcodes)
+	pil = Image.open(path+ '/' + filename).convert('L')
+	width, height = pil.size
+	raw = pil.tobytes()
+	image = zbar.Image(width, height, 'Y800', raw)
+	
+	if not timestamp in barcode_validated.keys():
+		results = scanner.scan(image)
+	
+	if results:
+	# extract results
+	    for symbol in image:
+	    	print 'decoded', symbol.type, 'symbol', '"%s"' % symbol.data
+	    	if (timestamp in symbols_found.keys()):
+	    		if symbols_found[timestamp] == symbol.data:
+	    			print "success, validated barcode"
+	    			barcode_validated[timestamp] = True
+	    			break
+	    	else: 
+	    		symbols_found[timestamp] = symbol.data
+	else:
+	    print 'did not decode'
+	
+	print 'exit symbol loop'	
 	# product_lookup(final_list)
 
-def check_for_object_presence(im):	
-	height, width = im.shape[:2]
-	print width
-	print height
-	print im[1070,10]
+def check_if_object_present(im):
+	#returns whether photo-gate is blocked
 
-	# check if certain pixel is a certain colour or within a range, and if yes, then return bool no
-	# if no check the rest of the pixels
-	# if all of them don't match
-	# return bool yes
+	threshold = 100	
+	pixels = {}
+	reference_present = True
+	#im[x,y] where x is the row (so going down) and y are columns are going across
+	references = [[155,156,198],[106,139,140]]
+	pixels = [im[1000,40], im[1000,300]]
+	print pixels[0]
+	print pixels[1]
 
-	#function returns bool which will signal if we should start taking pictures that will be analyzed
+	print len(pixels)
+
+	for i in (0,1):
+		if (pixels[i][i] < (references[i][i] - threshold)) or (pixels[i][i] > (references[i][i] + threshold)):
+			reference_present = False
+
+	return reference_present
 
 def product_lookup(barcode):
 	print barcode
