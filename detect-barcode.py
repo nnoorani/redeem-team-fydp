@@ -107,6 +107,26 @@ def scan_images(path, filename, timestamp):
 	
 	print 'exit symbol loop'	
 	# product_lookup(final_list)
+	
+def check_if_object_present(im):
+	#returns whether photo-gate is blocked
+
+	threshold = 100	
+	pixels = {}
+	reference_present = True
+	#im[x,y] where x is the row (so going down) and y are columns are going across
+	references = [[155,156,198],[106,139,140]]
+	pixels = [im[1000,40], im[1000,300]]
+	print pixels[0]
+	print pixels[1]
+
+	print len(pixels)
+
+	for i in (0,1):
+		if (pixels[i][i] < (references[i][i] - threshold)) or (pixels[i][i] > (references[i][i] + threshold)):
+			reference_present = False
+
+	return reference_present
 
 def product_lookup(barcode):
 	print barcode
