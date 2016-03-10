@@ -4,11 +4,14 @@ from PIL import Image
 import threading
 import os
 import zbar
+import Queue
 
 capture_images = False # don't start off taking pictures
 symbols_found = {}
 barcode_validated = {}
 capture_completed = threading.Event()
+object_in_system = threading.Event()
+q = Queue.Queue()
 
 database = {
 	"6820020094" : "products/chocolate-milk.jpg",
@@ -21,10 +24,11 @@ database = {
 	"060410014431" : "products/pretzel.jpg"
 }
 
-def initialize_camera():
+def initialize_camera(i):
 	# initializes camera using openCV
 	#returns the width, height, and camera object 
-	cam = cv2.VideoCapture(0)
+	print i
+	cam = cv2.VideoCapture(i)
 	if cam.isOpened():
 		cam.set(5, 8)
 		return cam
@@ -34,19 +38,30 @@ def set_resolution(cam, x, y):
 	cam.set(3,int(x))
 	cam.set(4,int(y))
 
+def test_capture(cam, timestamp):
+	# runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
+	if cam.isOpened():
+		retval, im = cam.read()
+		is_object_present = check_if_object_present(im)
+		if is_object_present:
+			object_in_system.clear()
+			q.put(timestamp)
+			object_in_system.set()
+
+
 def capture(cam, timestamp):
 	k = 0
 	# runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
-	global im_array
 	global capture_completed
 	while True:
-		if capture_images and not timestamp in barcode_validated:
+		if not timestamp in barcode_validated.keys():
 			# if we are supposed to be taking pictures right now	
 			# print 'before starting image array length is %s' % len(im_array)
 			if cam.isOpened():
 				capture_completed.clear()
 				retval, im = cam.read()
-				threading.Thread(target=export_photos, args=(im,timestamp,k)).start()
+				if not waiting_for_object: 
+					threading.Thread(target=export_photos, args=(im,timestamp,k)).start()
 				capture_completed.set()
 				k += 1
 
@@ -64,23 +79,26 @@ def export_photos(im, timestamp, k):
 	# use the path to scan the images in the folder we just made
 	scan_images(path,filename, timestamp)
 
-def get_user_input():
-	global im_array, capture_images, exporting, capture_completed
-	# controls whether or not we are taking pictures right now
-	while True:
-		#always asking for user input to control
-		x = raw_input('Press Enter to toggle picture taking')
-		print x
-		if not x:
-			#happens when you press Enter
-			if capture_images:
-				# if already taking pictures, turn it off
-				capture_images = False
-			else:
-				# if not taking pictures right now, start taking pictures
-				capture_images = True
-				timestamp = time.time()
-				threading.Thread(target=capture, args=(cam,timestamp)).start()
+def wait_for_object_to_be_present(): 
+	while True: 
+		timestamp = time.time()
+		print "taking a test picture"
+		test_capture(cameras[0], timestamp)
+
+def start_camera_threads():
+	#starting other camera threads
+		while True: 
+			object_in_system.wait()
+			
+			print "im not waiting anymore"
+			
+			if not q.empty():
+				curr_timestamp = q.get()
+				print curr_timestamp
+
+				threading.Thread(target=capture, args=(cameras[1],curr_timestamp)).start()
+				threading.Thread(target=capture, args=(cameras[2],curr_timestamp)).start()
+
 
 def scan_images(path, filename, timestamp):
 	scanner = zbar.ImageScanner()
@@ -88,7 +106,7 @@ def scan_images(path, filename, timestamp):
 
 	pil = Image.open(path+ '/' + filename).convert('L')
 	width, height = pil.size
-	raw = pil.tobytes()
+	raw = pil.tostring()
 	image = zbar.Image(width, height, 'Y800', raw)
 	
 	if scanner.scan(image):
@@ -107,7 +125,7 @@ def scan_images(path, filename, timestamp):
 	
 	print 'exit symbol loop'	
 	# product_lookup(final_list)
-	
+
 def check_if_object_present(im):
 	#returns whether photo-gate is blocked
 
@@ -115,18 +133,22 @@ def check_if_object_present(im):
 	pixels = {}
 	reference_present = True
 	#im[x,y] where x is the row (so going down) and y are columns are going across
-	references = [[155,156,198],[106,139,140]]
-	pixels = [im[1000,40], im[1000,300]]
-	print pixels[0]
-	print pixels[1]
+	references = [[57,78,127],[32,22,95],[70,50,35]]
+	pixels = [im[950,980], im[950,1015], im[950,1045]]
 
-	print len(pixels)
+	for i in range(0,3):
+		for j in range(0,3):
+			colour_difference = pixels[i][j] - references[i][j]
+			print i, j
+			print pixels[i]
+			print references[i]
 
-	for i in (0,1):
-		if (pixels[i][i] < (references[i][i] - threshold)) or (pixels[i][i] > (references[i][i] + threshold)):
-			reference_present = False
+			print colour_difference
 
-	return reference_present
+			if abs(colour_difference) >= threshold:
+				reference_present = False
+	print "reference is present %s" % reference_present
+	return True
 
 def product_lookup(barcode):
 	print barcode
@@ -139,12 +161,13 @@ def product_lookup(barcode):
 		else:
 			print "Image for this barcode does not exist yet"
 
-cam = initialize_camera()
-set_resolution(cam, 1900, 1080)
-user_input_thread = threading.Thread(target=get_user_input, args=())
-user_input_thread.setDaemon(True)
+cameras =  {}
+for i in range(0,2):
+	cameras[i] = initialize_camera(i)
+	print cameras
 
-user_input_thread.start()
+wait_for_object_to_be_present()
+start_camera_threads()
 
 try:
 	while True:
