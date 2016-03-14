@@ -39,21 +39,20 @@ def capture(cam, timestamp):
 	k = 0
 	# runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
 	global capture_completed
-	# while True:
-	if not timestamp in barcode_validated.keys():
+	while True:
+		if not timestamp in barcode_validated.keys():
 		# if we are supposed to be taking pictures right now	
 		# print 'before starting image array length is %s' % len(im_array)
-		if cam.isOpened():
-			capture_completed.clear()
-			retval, im = cam.read()
-			threading.Thread(target=export_photos, args=(im,timestamp,k)).start()
-			capture_completed.set()
-			k += 1
+			if cam.isOpened():
+				capture_completed.clear()
+				retval, im = cam.read()
+				threading.Thread(target=export_photos, args=(im,timestamp,k)).start()
+				capture_completed.set()
+				k += 1
 
 def wait_for_object_to_be_present(): 
 	while True: 
 		timestamp = time.time()
-		print "taking a test picture"
 		im = test_capture(cameras[0], timestamp)
 		is_object_present = check_if_object_present(im)
 		if is_object_present:
@@ -90,7 +89,6 @@ def export_photos(im, timestamp, k):
 	
 	path = str(timestamp)
 	if not os.path.isdir(path):
-		print "hello"
 		os.mkdir(path)
 	
 	filename = str(k) + ".png"
@@ -104,9 +102,10 @@ def scan_images(path, filename, timestamp):
 
 	pil = Image.open(path+ '/' + filename).convert('L')
 	width, height = pil.size
-	print width
-	print height
-	raw = pil.tobytes()
+	# print width
+	# print height
+	# raw = pil.tobytes() #for MAC/other version of python
+	raw = pil.tostring() #based on python version 2.7.8
 	image = zbar.Image(width, height, 'Y800', raw)
 	
 	if scanner.scan(image):
@@ -148,8 +147,8 @@ def check_if_object_present(im):
 
 	print "object is present %s" % object_present
 	time.sleep(2) #set delays to help with testing
-	return True #help with testing - comment out when actually using the photo flag
-	# return object_present - UNCOMMENT WHEN NOT TESTING ANYMORE
+	# return True #help with testing - comment out when actually using the photo flag
+	return object_present #- UNCOMMENT WHEN NOT TESTING ANYMORE
 
 def product_lookup(barcode):
 	print barcode
