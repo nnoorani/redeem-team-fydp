@@ -1,11 +1,12 @@
 import cv2
 import time
-from PIL import Image
+from PIL import Image, ImageFile
 import threading
 import os
 import zbar
 import Queue
 
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 symbols_found = {}
 barcode_validated = {}
 capture_completed = threading.Event()
@@ -45,6 +46,7 @@ def capture(cam, timestamp):
 			if cam.isOpened():
 				capture_completed.clear()
 				retval, im = cam.read()
+				print retval
 				threading.Thread(target=export_photos, args=(im,timestamp,k)).start()
 				capture_completed.set()
 				k += 1
@@ -52,7 +54,7 @@ def capture(cam, timestamp):
 def wait_for_object_to_be_present(): 
 	while True: 
 		timestamp = time.time()
-		im = test_capture(cameras[1], timestamp)
+		im = test_capture(cameras[0], timestamp)
 		is_object_present = check_if_object_present(im)
 		if is_object_present:
 
@@ -79,7 +81,7 @@ def start_camera_threads():
 
 				#HERE IS WHERE YOU ADD THE THREADS FOR ADDITIONAL CAMERAS, depending on which one you are using for 
 				# actual detection, and which one is only for checking object presence
-				threading.Thread(target=capture, args=(cameras[0],curr_timestamp)).start()
+				threading.Thread(target=capture, args=(cameras[1],curr_timestamp)).start()
 				threading.Thread(target=capture, args=(cameras[2],curr_timestamp)).start()
 				# threading.Thread(target=capture, args=(cameras[3],curr_timestamp)).start()
 
@@ -100,12 +102,11 @@ def scan_images(path, filename, timestamp):
 	global barcode_validated
 	scanner = zbar.ImageScanner()
 	scanner.parse_config('enable')
+	pil = None
 
 	print "scanning"
-	try:
-		pil = Image.open(path+ '/' + filename).convert('L')
-	except IOError, e:
-		print "Error opening file", path + '/' + filename
+	pil = Image.open(path+ '/' + filename).convert('L')
+	print "Error opening file", path + '/' + filename
 
 	if pil:
 		width, height = pil.size
@@ -174,7 +175,7 @@ def product_lookup(barcode):
 			print "Image for this barcode does not exist yet"
 
 cameras =  {}
-for i in range(0,3):
+for i in range(0,4):
 	cameras[i] = initialize_camera(i)
 	print cameras
 
