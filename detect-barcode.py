@@ -32,7 +32,6 @@ def test_capture(cam, timestamp):
 	# runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
 	if cam.isOpened():
 		retval, im = cam.read()
-
 	return im
 
 def capture(cam, timestamp):
@@ -53,7 +52,7 @@ def capture(cam, timestamp):
 def wait_for_object_to_be_present(): 
 	while True: 
 		timestamp = time.time()
-		im = test_capture(cameras[0], timestamp)
+		im = test_capture(cameras[1], timestamp)
 		is_object_present = check_if_object_present(im)
 		if is_object_present:
 
@@ -62,6 +61,7 @@ def wait_for_object_to_be_present():
 			print "qsize is %d" % q.qsize() #should be 1
 			object_in_system.set() #by calling .set(), we are letting the other camreras know that are 
 			#waiting for an object that an object is here (CHECK LINE 69)
+			time.sleep(60)
 
 def start_camera_threads():
 	#starting other camera threads
@@ -79,8 +79,8 @@ def start_camera_threads():
 
 				#HERE IS WHERE YOU ADD THE THREADS FOR ADDITIONAL CAMERAS, depending on which one you are using for 
 				# actual detection, and which one is only for checking object presence
-				threading.Thread(target=capture, args=(cameras[1],curr_timestamp)).start()
-				# threading.Thread(target=capture, args=(cameras[2],curr_timestamp)).start()
+				threading.Thread(target=capture, args=(cameras[0],curr_timestamp)).start()
+				threading.Thread(target=capture, args=(cameras[2],curr_timestamp)).start()
 				# threading.Thread(target=capture, args=(cameras[3],curr_timestamp)).start()
 
 def export_photos(im, timestamp, k):
@@ -97,30 +97,42 @@ def export_photos(im, timestamp, k):
 	scan_images(path,filename, timestamp)
 
 def scan_images(path, filename, timestamp):
+	global barcode_validated
 	scanner = zbar.ImageScanner()
 	scanner.parse_config('enable')
 
-	pil = Image.open(path+ '/' + filename).convert('L')
-	width, height = pil.size
-	# print width
-	# print height
-	# raw = pil.tobytes() #for MAC/other version of python
-	raw = pil.tostring() #based on python version 2.7.8
-	image = zbar.Image(width, height, 'Y800', raw)
-	
-	if scanner.scan(image):
-	# extract results
-	    for symbol in image:
-	    	print 'decoded', symbol.type, 'symbol', '"%s"' % symbol.data
-	    	if (timestamp in symbols_found.keys()):
-	    		if symbols_found[timestamp] == symbol.data:
-	    			print "success, validated barcode"
-	    			barcode_validated[timestamp] = True
-	    			break
-	    	else: 
-	    		symbols_found[timestamp] = symbol.data
+	print "scanning"
+	try:
+		pil = Image.open(path+ '/' + filename).convert('L')
+	except IOError, e:
+		print "Error opening file", path + '/' + filename
 
-	# product_lookup(final_list)
+	if pil:
+		width, height = pil.size
+		# print width
+		# print height
+		# raw = pil.tobytes() #for MAC/other version of python
+		raw = pil.tobytes() #based on python version 2.7.8
+		image = zbar.Image(width, height, 'Y800', raw)
+
+		if not timestamp in barcode_validated.keys():
+			results = scanner.scan(image)
+
+			if results:
+				# extract results
+			    for symbol in image:
+			    	print 'decoded', symbol.type, 'symbol', '"%s"' % symbol.data
+			    	if (timestamp in symbols_found.keys()):
+			    		if symbols_found[timestamp] == symbol.data:
+			    			print "success, validated barcode"
+			    			barcode_validated[timestamp] = True
+			    			# insert product look up stuff arthur
+			    			break
+			    	else: 
+			    		symbols_found[timestamp] = symbol.data
+			else:
+				print "did not decode"
+				# product_lookup(final_list)
 
 def check_if_object_present(im):
 	#returns whether photo-gate is blocked
@@ -146,9 +158,9 @@ def check_if_object_present(im):
 				object_present = True
 
 	print "object is present %s" % object_present
-	time.sleep(2) #set delays to help with testing
-	# return True #help with testing - comment out when actually using the photo flag
-	return object_present #- UNCOMMENT WHEN NOT TESTING ANYMORE
+	time.sleep(3) #set delays to help with testing
+	return True #help with testing - comment out when actually using the photo flag
+	# return object_present #- UNCOMMENT WHEN NOT TESTING ANYMORE
 
 def product_lookup(barcode):
 	print barcode
@@ -162,7 +174,7 @@ def product_lookup(barcode):
 			print "Image for this barcode does not exist yet"
 
 cameras =  {}
-for i in range(0,2):
+for i in range(0,3):
 	cameras[i] = initialize_camera(i)
 	print cameras
 
