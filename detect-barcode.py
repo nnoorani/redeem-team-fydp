@@ -13,6 +13,21 @@ capture_completed = threading.Event()
 object_in_system = threading.Event()
 q = Queue.Queue()
 
+database = {
+	"6820020094" : "products/chocolate-milk.jpg",
+	"06741806" : "products/fanta.jpg",
+	"06782900" : "products/coke.jpg",
+	"064200150224" : "products/spaghetti.jpg",
+	"058496423346" : "products/uncleben.jpg",
+	"060383674304": "products/tomatoes.jpg",
+	"066721020376" : "products/triscuit.jpg",
+	"060410014431" : "products/pretzel.jpg",
+	"066721002297" : "products/ritz.jpg",
+	"068100058925" : "products/kd.jpg"
+
+}
+
+
 def initialize_camera(i):
 	# initializes camera using openCV
 	# need to pass in an int for the camera we are choosing to initialize and it returns the camera object
@@ -125,13 +140,12 @@ def scan_images(path, filename, timestamp):
 			    		if symbols_found[timestamp] == symbol.data:
 			    			print "success, validated barcode"
 			    			barcode_validated[timestamp] = True
-			    			# insert product look up stuff arthur
+			    			product_lookup(symbol.data)
 			    			break
 			    	else: 
 			    		symbols_found[timestamp] = symbol.data
 			else:
 				print "did not decode"
-				# product_lookup(final_list)
 
 def check_if_object_present(im):
 	#returns whether photo-gate is blocked
@@ -171,7 +185,7 @@ def product_lookup(barcode):
 			print database[barcode]
 			product_img = cv2.imread(database[barcode]);
 			cv2.imshow('product', product_img)
-			cv2.waitKey(0)
+			cv2.waitKey(0) #may need to remove this because it may puase the code
 		else:
 			print "Image for this barcode does not exist yet"
 
