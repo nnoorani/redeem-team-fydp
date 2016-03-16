@@ -136,21 +136,24 @@ def scan_images(path, filename, timestamp):
 def check_if_object_present(im):
 	#returns whether photo-gate is blocked
 
-	threshold = 100	#this is the range that we want the colour to be between (its too high right now, lower this)
+        im2 = im[135:145,295:345] # crop image to around the pixels we want to look at
+        #cv2.imwrite(path + '/' + "crop.png", im2)
+        
+	threshold = 25	#this is the range that we want the colour to be between (its too high right now, lower this)
 	pixels = {}
 	object_present = False #usually, an object isn't there
 	
-	references = [[57,78,127],[32,22,95],[70,50,35]] #this is the colours we EXPECT them to be
+	references = [[23,82,118],[15,0,86],[58,27,0]] #this is the colours we EXPECT them to be
 
 	#im[x,y] where x is the row (so going down) and y are columns are going across
 	# im[x,y] is the coordinates of where we are checking EACH of the three colours in the flag - NEEDS UPDATING ONCE IN SYSTEM
 	# im[x,y] returns the BGR colour at that coordinate
-	pixels = [im[710,980], im[710,1015], im[710,1045]] 
+	pixels = [im2[6,6], im2[6,25], im2[6,40]]
 
 	for i in range(0,3):
 		for j in range(0,3):
 			#find the colour difference between the pixels we found and the reference
-			# if its less than 100 (threshold), that means the object isnt there and we can still see the flag
+			# if its less than 25 (threshold), that means the object isnt there and we can still see the flag
 			
 			colour_difference = pixels[i][j] - references[i][j]
 			if abs(colour_difference) >= threshold:
