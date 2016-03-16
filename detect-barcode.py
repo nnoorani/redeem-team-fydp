@@ -46,7 +46,6 @@ def capture(cam, timestamp):
 			if cam.isOpened():
 				capture_completed.clear()
 				retval, im = cam.read()
-				print retval
 				threading.Thread(target=export_photos, args=(im,timestamp,k)).start()
 				capture_completed.set()
 				k += 1
@@ -106,7 +105,6 @@ def scan_images(path, filename, timestamp):
 
 	print "scanning"
 	pil = Image.open(path+ '/' + filename).convert('L')
-	print "Error opening file", path + '/' + filename
 
 	if pil:
 		width, height = pil.size
@@ -175,7 +173,7 @@ def product_lookup(barcode):
 			print "Image for this barcode does not exist yet"
 
 cameras =  {}
-for i in range(0,4):
+for i in range(0,3):
 	cameras[i] = initialize_camera(i)
 	print cameras
 
