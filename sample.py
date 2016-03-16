@@ -26,7 +26,7 @@ database = {
 def initialize_camera():
 	# initializes camera using openCV
 	#returns the width, height, and camera object 
-	cam = cv2.VideoCapture(0)
+	cam = cv2.VideoCapture(1)
 	cam.set(5, 8)
 	if cam.isOpened():
 		return cam
