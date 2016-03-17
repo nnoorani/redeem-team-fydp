@@ -124,16 +124,8 @@ def scan_images(path, filename, timestamp):
 
 def check_if_object_present(im):
         #returns whether photo-gate is blocked
-
-        #path = str("test")
-        #if not os.path.isdir(path):
-        #        os.mkdir(path)
         
-        #filename = "hi" + ".png"
-        #cv2.imwrite(path + '/' + filename, im)
-        
-        im2 = im[135:145,295:345]
-        #im2 = im[310:430,525:605]
+        im2 = im[135:145,295:345] # crop image to around the pixels we want to look at
         
         #cv2.imwrite(path + '/' + "crop.png", im2)
         
@@ -151,7 +143,7 @@ def check_if_object_present(im):
         for i in range(0,3):
                 for j in range(0,3):
                         #find the colour difference between the pixels we found and the reference
-                        # if its less than 100 (threshold), that means the object isnt there and we can still see the flag
+                        # if its less than 25 (threshold), that means the object isnt there and we can still see the flag
                         
                         colour_difference = pixels[i][j] - references[i][j]
 
