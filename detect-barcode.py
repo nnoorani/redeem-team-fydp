@@ -5,6 +5,7 @@ import threading
 import os
 import zbar
 import Queue
+import server
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 symbols_found = {}
@@ -13,21 +14,6 @@ capture_completed = threading.Event()
 object_in_system = threading.Event()
 q = Queue.Queue()
 dict_lock = threading.Lock()
-
-database = {
-        "6820020094" : "products/chocolate-milk.jpg",
-        "06741806" : "products/fanta.jpg",
-        "06782900" : "products/coke.jpg",
-        "064200150224" : "products/spaghetti.jpg",
-        "058496423346" : "products/uncleben.jpg",
-        "060383674304": "products/tomatoes.jpg",
-        "066721020376" : "products/triscuit.jpg",
-        "060410014431" : "products/pretzel.jpg",
-        "066721002297" : "products/ritz.jpg",
-        "068100058925" : "products/kd.jpg"
-
-}
-
 
 def initialize_camera(i):
         # initializes camera using openCV
@@ -147,7 +133,7 @@ def scan_images(path, filename, timestamp):
                                         if symbols_found[timestamp] == symbol.data:
                                                 print "success, validated barcode"
                                                 barcode_validated[timestamp] = True
-                                                product_lookup(symbol.data)
+                                                server.handle_new_detection(symbol.data)
                                                 break
                                 else: 
                                         

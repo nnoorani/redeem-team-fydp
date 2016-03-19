@@ -1,0 +1,20 @@
+/* cue box */
+.cue-box {
+	height: 100px;
+}
+
+.cue-box.go {
+	background-color: #33cc33;
+}
+
+.cue-box.missed {
+	background-color: #ffbf00;
+}
+
+.cue-box.wait {
+	background-color: #ff8000;
+}
+
+.product-image {
+	padding-top: 200px;
+}
