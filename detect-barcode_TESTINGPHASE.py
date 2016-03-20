@@ -125,15 +125,15 @@ def scan_images(path, filename, timestamp):
 def check_if_object_present(im):
         #returns whether photo-gate is blocked
         
-        im2 = im[135:145,295:345] # crop image to around the pixels we want to look at
+        im2 = im[395:405,285:335] # crop image to around the pixels we want to look at
         
-        #cv2.imwrite(path + '/' + "crop.png", im2)
+        cv2.imwrite("test" + '/' + "crop.png", im)
         
         threshold = 25  #this is the range that we want the colour to be between (its too high right now, lower this)
         #pixels = {}
         object_present = False #usually, an object isn't there
         
-        references = [[23,82,118],[15,0,86],[58,27,0]] ##this is the colours we EXPECT them to be
+        references = [[65,185,205],[35,8,125],[170,80,20]] ##this is the colours we EXPECT them to be
 
         #im[x,y] where x is the row (so going down) and y are columns are going across
         # im[x,y] is the coordinates of where we are checking EACH of the three colours in the flag - NEEDS UPDATING ONCE IN SYSTEM
@@ -168,7 +168,7 @@ def product_lookup(barcode):
                         print "Image for this barcode does not exist yet"
 
 cameras =  {}
-for i in range(2,3):
+for i in range(1,5):
         cameras[i] = initialize_camera(i)
         print cameras
 
