@@ -1,18 +1,24 @@
-var socket = io.connect('http://' + document.domain + ':' + location.port),
-previousProduct,
+var socket = io.connect('http://' + document.domain + ':' + location.port + '/test'),
 productList = $("div.product-list"),
 productImage = $(".product-image > img");
 
 socket.on('connect', function() {
-    socket.emit('my event', {data: 'I\'m connected!'});
-});
+	socket.emit('request', "connected");
+	setInterval(function() {
+		socket.emit('checking');
+	}, 100);
+    socket.on('disconnect', function() {
+    	console.log("disconnected")
+    });
+    socket.on('json', function(data) {
+    	console.log('im getting new product info');
+    	var product = data;
+    	if (product) {
+    		display_just_scanned(product);
+    		display_product_info(product)
+    	}
+    });
 
-socket.on('new product', function(data) {
-	var product = data;
-	if (product) {
-		display_just_scanned(product);
-		display_product_info(product)
-	}
 });
 
 function display_just_scanned(product) {

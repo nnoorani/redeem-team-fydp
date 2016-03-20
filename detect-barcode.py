@@ -1,3 +1,32 @@
+async_mode = None
+if async_mode is None:
+    try:
+        import eventlet
+        async_mode = 'eventlet'
+    except ImportError:
+        pass
+
+    if async_mode is None:
+        try:
+            from gevent import monkey
+            async_mode = 'gevent'
+        except ImportError:
+            pass
+
+    if async_mode is None:
+        async_mode = 'threading'
+
+    print('async_mode is ' + async_mode)
+
+# monkey patching is necessary because this application uses a background
+# thread
+if async_mode == 'eventlet':
+    import eventlet
+    eventlet.monkey_patch()
+elif async_mode == 'gevent':
+    from gevent import monkey
+    monkey.patch_all()
+
 import cv2
 import time
 from PIL import Image, ImageFile
@@ -5,7 +34,9 @@ import threading
 import os
 import zbar
 import Queue
-import server
+from flask import Flask, render_template, url_for, jsonify
+from flask_socketio import SocketIO, send, emit
+import json
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 symbols_found = {}
@@ -14,6 +45,16 @@ capture_completed = threading.Event()
 object_in_system = threading.Event()
 q = Queue.Queue()
 dict_lock = threading.Lock()
+app = Flask(__name__)
+socketio = SocketIO(app)
+server_started = False
+
+database = {
+    "6820020094" : {"name": "Chocolate Milk", "img-url": "products/chocolate-milk.jpg", "price": "3"},
+    "066721003140" : {"name": "Fanta", "img-url": "products/triscuit.jpg", "price": 1},
+    "06782900" : {"name": "Coca-Cola", "img-url": "products/coke.jpg", "price": 1},
+}
+
 
 def initialize_camera(i):
         # initializes camera using openCV
@@ -39,6 +80,7 @@ def test_capture(cam, timestamp):
 
 def capture(cam, timestamp, prefix):
         k = 0
+        print "hello"
         # runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
         global capture_completed
         while True:
@@ -54,17 +96,18 @@ def capture(cam, timestamp, prefix):
 
 def wait_for_object_to_be_present(): 
         while True: 
-                timestamp = time.time()
-                im = test_capture(cameras[3], timestamp)
-                is_object_present = check_if_object_present(im)
-                if is_object_present:
+            print "hello"
+            timestamp = time.time()
+            im = test_capture(cameras[0], timestamp)
+            is_object_present = check_if_object_present(im)
+            if is_object_present:
 
-                        object_in_system.clear() #clearing removes the old object from the system so the other camera threads start waiting again
-                        q.put(timestamp) #now we are putting the timestamp of the new object into the queue
-                        print "qsize is %d" % q.qsize() #should be 1
-                        object_in_system.set() #by calling .set(), we are letting the other camreras know that are 
-                        #waiting for an object that an object is here (CHECK LINE 69)
-                        time.sleep(60)
+                    object_in_system.clear() #clearing removes the old object from the system so the other camera threads start waiting again
+                    q.put(timestamp) #now we are putting the timestamp of the new object into the queue
+                    print "qsize is %d" % q.qsize() #should be 1
+                    object_in_system.set() #by calling .set(), we are letting the other camreras know that are 
+                    #waiting for an object that an object is here (CHECK LINE 69)
+                    time.sleep(2)
 
 def start_camera_threads():
         #starting other camera threads
@@ -84,9 +127,9 @@ def start_camera_threads():
                                 # actual detection, and which one is only for checking object presence
                                 threading.Thread(target=capture, args=(cameras[1],curr_timestamp, "cam1")).start()
                                 print "starting 1"
-                                threading.Thread(target=capture, args=(cameras[2],curr_timestamp, "cam2")).start()
+                                # threading.Thread(target=capture, args=(cameras[2],curr_timestamp, "cam2")).start()
                                 print "starting 2"
-                                threading.Thread(target=capture, args=(cameras[0],curr_timestamp, "cam3")).start()
+                                # threading.Thread(target=capture, args=(cameras[0],curr_timestamp, "cam3")).start()
                                 print "starting 3"
 
 def export_photos(im, timestamp, prefix, k):
@@ -117,7 +160,7 @@ def scan_images(path, filename, timestamp):
                 # print width
                 # print height
                 # raw = pil.tobytes() #for MAC/other version of python
-                raw = pil.tostring() #based on python version 2.7.8
+                raw = pil.tobytes() #based on python version 2.7.8
                 image = zbar.Image(width, height, 'Y800', raw)
 
                 dict_lock.acquire()
@@ -133,12 +176,11 @@ def scan_images(path, filename, timestamp):
                                         if symbols_found[timestamp] == symbol.data:
                                                 print "success, validated barcode"
                                                 barcode_validated[timestamp] = True
-                                                server.handle_new_detection(symbol.data)
+                                                # handle_new_detection(symbol.data)
+                                                socketio.emit("json", "found something")
                                                 break
                                 else: 
-                                        
                                         symbols_found[timestamp] = symbol.data
-                                        
                         else:
                                 print "did not decode"
                 dict_lock.release()
@@ -183,9 +225,38 @@ def product_lookup(barcode):
                         cv2.waitKey(0) #may need to remove this because it may puase the code
                 else:
                         print "Image for this barcode does not exist yet"
+@app.route("/")
+def index():
+    print "hello"
+    return render_template('index.html',)
+
+def handle_new_detection(barcode): 
+    print "i've detected something, trying to emit"
+    data = construct_product_data(barcode)
+    socketio.emit('json', data, namespace="/test")
+    print "emitted the socket event"
+
+@socketio.on('request', namespace="/test")
+def handle_message(data):
+    global server_started
+    server_started =  True
+    data = {}
+    print (data)
+
+@socketio.on('checking', namespace="/test")
+def handle_check():
+    socketio.emit('json', namespace="/test")
+
+def construct_product_data(barcode):
+    return database[barcode]
+
+def start_server():
+    if __name__ == "__main__":
+        print "im starting the server"
+        socketio.run(app)
 
 cameras =  {}
-for i in range(0,4):
+for i in range(0,2):
         cameras[i] = initialize_camera(i)
         print cameras
 
@@ -197,6 +268,9 @@ camera_thread.setDaemon(True)
 
 reference_check_thread.start()
 camera_thread.start()
+
+
+
 
 try:
         while True:

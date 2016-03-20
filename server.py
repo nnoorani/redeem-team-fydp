@@ -4,10 +4,11 @@ import json
 
 app = Flask(__name__)
 socketio = SocketIO(app)
+socketio.emit('new product', "la")
 
 database = {
     "6820020094" : {"name": "Chocolate Milk", "img-url": "products/chocolate-milk.jpg", "price": "3"},
-    "06741806" : {"name": "Fanta", "img-url": "products/triscuit.jpg", "price": 1},
+    "066721003140" : {"name": "Fanta", "img-url": "products/triscuit.jpg", "price": 1},
     "06782900" : {"name": "Coca-Cola", "img-url": "products/coke.jpg", "price": 1},
 }
 
@@ -19,15 +20,17 @@ def handle_new_detection(barcode):
 	print "hello"
 	print (barcode)
 	data = construct_product_data(barcode)
-	socketio.emit('new product', data)
+	print data
+	socketio.emit('new product', data, namespace="/")
+	print "emitted the socket event"
 
-@socketio.on('my event')
+@socketio.on('my event', namespace="/")
 def handle_message(data):
 	print (data)
-	handle_new_detection("06741806")
 
 def construct_product_data(barcode):
 	return database[barcode]
 
-if __name__ == "__main__":
-    socketio.run(app)
+def start_server():
+	print "im starting the server"
+	socketio.run(app)
