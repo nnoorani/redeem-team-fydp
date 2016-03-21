@@ -28,9 +28,9 @@ database = {
         "06741806" : {"name": "Fanta", "img-url": "products/triscuit.jpg", "price": 0.99},
         "06782900" : {"name": "Coca-Cola", "img-url": "products/coke.jpg", "price": 0.99},
         "064200150224" : {"name":"Spaghetti", "img-url": "products/spaghetti.jpg", "price":2.99},
-        "058496423346" : {"name":"Uncle Ben's Rice", "img-url": "products/uncleben.jpg", "price" : 4.99}
+        "058496423346" : {"name":"Uncle Ben's Rice", "img-url": "products/uncleben.jpg", "price" : 4.99},
         "066721003140" : {"name": "Triscuit", "img-url": "products/triscuit.jpg", "price":1},
-        "060410014431" : {"name" : "Pretzels", "img-url" : "products/pretzel.jpg", "price": 3.99
+        "060410014431" : {"name" : "Pretzels", "img-url" : "products/pretzel.jpg", "price": 3.99},
         "066721002297" : {"name": "Ritz Crackers", "img-url":"products/ritz.jpg", "price":1},
         "068100058925" : {"name": "Kraft Dinner", "img-url": "products/kd.jpg", "price": 1.99},
         "Not Found" : {"name": "Item Not Found", "img-url":"product/default.png", "price": 0.00}
