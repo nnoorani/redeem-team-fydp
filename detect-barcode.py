@@ -104,12 +104,18 @@ def start_camera_threads():
 
                                 #HERE IS WHERE YOU ADD THE THREADS FOR ADDITIONAL CAMERAS, depending on which one you are using for 
                                 # actual detection, and which one is only for checking object presence
-                                threading.Thread(target=capture, args=(cameras[1],curr_timestamp, "cam1")).start()
                                 print "starting 1"
-                                # threading.Thread(target=capture, args=(cameras[2],curr_timestamp, "cam2")).start()
+                                t1 = threading.Thread(target=capture, args=(cameras[1],curr_timestamp, "cam1"))
+                                t1.start()
+                                time.sleep(10)
                                 print "starting 2"
-                                # threading.Thread(target=capture, args=(cameras[0],curr_timestamp, "cam3")).start()
+                                t2 = threading.Thread(target=capture, args=(cameras[2],curr_timestamp, "cam2"))
+                                t2.start()
+                                time.sleep(10)
                                 print "starting 3"
+                                t3.threading.Thread(target=capture, args=(cameras[0],curr_timestamp, "cam3"))
+                                t3.start()
+
 
 def export_photos(im, timestamp, prefix, k):
         # takes an array of image files and a timestamp and creates folder using the timestamp, exports to there
@@ -122,9 +128,9 @@ def export_photos(im, timestamp, prefix, k):
         filename = prefix + "-" + str(k) + ".png"
         cv2.imwrite(path + '/' + filename, im)
         # use the path to scan the images in the folder we just made
-        scan_images(path,filename, timestamp)
+        scan_images(path,filename, timestamp, prefix)
 
-def scan_images(path, filename, timestamp):
+def scan_images(path, filename, timestamp, prefix):
         global barcode_validated
         scanner = zbar.ImageScanner()
         scanner.parse_config('enable')
@@ -161,7 +167,8 @@ def scan_images(path, filename, timestamp):
                                 else: 
                                         symbols_found[timestamp] = symbol.data
                         else:
-                                print "did not decode"
+                                time_elapsed = time.time() - timestamp
+                                print "did not decode from %s after %d" % (prefix, time_elapsed)
                 dict_lock.release()
 
 def check_if_object_present(im):
