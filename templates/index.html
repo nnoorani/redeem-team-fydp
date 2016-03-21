@@ -1,32 +1,39 @@
 <html>
     <head>
-        <link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-        <link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
+        <link rel="stylesheet" href="../static/style.css">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     </head>
     <body>
         <div class="container-fluid">
             <div class="row">
-                <div class="col-md-6">
-                    <div class="cue-box missed col-md-12"></div>
+                <div class="col-md-6 product-image-container nopadding ">
+                    <div class="cue-box wait col-md-12">Please wait to place your item</div>
+                    <div class="product-name col-md-8">Name</div>
+                    <div class="product-price col-md-4">Price</div>
                     <div class="product-image text-center col-md-12">
-                        <img src="{{ url_for('static', filename='products/coke.jpg') }}" />
+                        <img src="../static/products/coke.jpg"  width='300'/>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 product-list-container nopadding">
+                    <div class="product-list-header">
+                        <div class="product-name col-md-9">Items in Cart</div>
+                        <div class="product-price col-md-3">Price</div>
+                    </div>
                     <div class="product-list">
-                        <div class="product-row">
+                        <div class="product-row col-md-12">
                             <div class="product-name col-md-10">Name</div>
                             <div class="product-price col-md-2">Price</div>
                         </div>
                     </div>
+                    <div class="total-row col-md-12">
+                        <div class="col-md-10 total-title">Total</div>
+                        <div class="col-md-2 total-sum">$0.00</div>
+                    </div>
                 </div>
             </div>
         </div>
-        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
-        <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='product_client.js')}}">
-
+        <script type="text/javascript" charset="utf-8" src="../static/product_client.js">
         </script>
     </body>
 </html>

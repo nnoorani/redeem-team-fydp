@@ -1,32 +1,6 @@
-async_mode = None
-if async_mode is None:
-    try:
-        import eventlet
-        async_mode = 'eventlet'
-    except ImportError:
-        pass
 
-    if async_mode is None:
-        try:
-            from gevent import monkey
-            async_mode = 'gevent'
-        except ImportError:
-            pass
-
-    if async_mode is None:
-        async_mode = 'threading'
-
-    print('async_mode is ' + async_mode)
-
-# monkey patching is necessary because this application uses a background
-# thread
-if async_mode == 'eventlet':
-    import eventlet
-    eventlet.monkey_patch()
-elif async_mode == 'gevent':
-    from gevent import monkey
-    monkey.patch_all()
-
+from websocket_server import WebsocketServer
+import json
 import cv2
 import time
 from PIL import Image, ImageFile
@@ -50,11 +24,17 @@ socketio = SocketIO(app)
 server_started = False
 
 database = {
-    "6820020094" : {"name": "Chocolate Milk", "img-url": "products/chocolate-milk.jpg", "price": "3"},
-    "066721003140" : {"name": "Fanta", "img-url": "products/triscuit.jpg", "price": 1},
-    "06782900" : {"name": "Coca-Cola", "img-url": "products/coke.jpg", "price": 1},
+        "6820020094" : {"name": "Chocolate Milk", "img-url": "products/chocolate-milk.jpg", "price": 2.99},
+        "06741806" : {"name": "Fanta", "img-url": "products/triscuit.jpg", "price": 0.99},
+        "06782900" : {"name": "Coca-Cola", "img-url": "products/coke.jpg", "price": 0.99},
+        "064200150224" : {"name":"Spaghetti", "img-url": "products/spaghetti.jpg", "price":2.99},
+        "058496423346" : {"name":"Uncle Ben's Rice", "img-url": "products/uncleben.jpg", "price" : 4.99}
+        "066721003140" : {"name": "Triscuit", "img-url": "products/triscuit.jpg", "price":1},
+        "060410014431" : {"name" : "Pretzels", "img-url" : "products/pretzel.jpg", "price": 3.99
+        "066721002297" : {"name": "Ritz Crackers", "img-url":"products/ritz.jpg", "price":1},
+        "068100058925" : {"name": "Kraft Dinner", "img-url": "products/kd.jpg", "price": 1.99},
+        "Not Found" : {"name": "Item Not Found", "img-url":"product/default.png", "price": 0.00}
 }
-
 
 def initialize_camera(i):
         # initializes camera using openCV
@@ -96,18 +76,17 @@ def capture(cam, timestamp, prefix):
 
 def wait_for_object_to_be_present(): 
         while True: 
-            print "hello"
-            timestamp = time.time()
-            im = test_capture(cameras[0], timestamp)
-            is_object_present = check_if_object_present(im)
-            if is_object_present:
+                timestamp = time.time()
+                im = test_capture(cameras[0], timestamp)
+                is_object_present = check_if_object_present(im)
+                if is_object_present:
 
-                    object_in_system.clear() #clearing removes the old object from the system so the other camera threads start waiting again
-                    q.put(timestamp) #now we are putting the timestamp of the new object into the queue
-                    print "qsize is %d" % q.qsize() #should be 1
-                    object_in_system.set() #by calling .set(), we are letting the other camreras know that are 
-                    #waiting for an object that an object is here (CHECK LINE 69)
-                    time.sleep(2)
+                        object_in_system.clear() #clearing removes the old object from the system so the other camera threads start waiting again
+                        q.put(timestamp) #now we are putting the timestamp of the new object into the queue
+                        print "qsize is %d" % q.qsize() #should be 1
+                        object_in_system.set() #by calling .set(), we are letting the other camreras know that are 
+                        #waiting for an object that an object is here (CHECK LINE 69)
+                        time.sleep(2)
 
 def start_camera_threads():
         #starting other camera threads
@@ -159,8 +138,9 @@ def scan_images(path, filename, timestamp):
                 width, height = pil.size
                 # print width
                 # print height
-                # raw = pil.tobytes() #for MAC/other version of python
-                raw = pil.tobytes() #based on python version 2.7.8
+
+                raw = pil.tobytes() #for MAC/other version of python
+                # raw = pil.tostring() #based on python version 2.7.8
                 image = zbar.Image(width, height, 'Y800', raw)
 
                 dict_lock.acquire()
@@ -176,14 +156,14 @@ def scan_images(path, filename, timestamp):
                                         if symbols_found[timestamp] == symbol.data:
                                                 print "success, validated barcode"
                                                 barcode_validated[timestamp] = True
-                                                # handle_new_detection(symbol.data)
-                                                socketio.emit("json", "found something")
+                                                handle_product_lookup(symbol.data)
                                                 break
                                 else: 
                                         symbols_found[timestamp] = symbol.data
                         else:
                                 print "did not decode"
                 dict_lock.release()
+
 def check_if_object_present(im):
         #returns whether photo-gate is blocked
 
@@ -255,6 +235,21 @@ def start_server():
         print "im starting the server"
         socketio.run(app)
 
+def handle_product_lookup(barcode):
+    data = construct_barcode_data(barcode)
+    data_in_json = json.dumps(data)
+    print data_in_json
+    server.send_message_to_all(data_in_json)
+
+def construct_barcode_data(barcode):
+    if not database.has_key(barcode):
+        add_barcode_to_database(barcode)
+
+    return database[barcode]
+
+def add_barcode_to_database(barcode):
+    database[barcode] = {"name": "None", "img-url": "products/default.png", "price": "3.99"}
+
 cameras =  {}
 for i in range(0,2):
         cameras[i] = initialize_camera(i)
@@ -269,8 +264,12 @@ camera_thread.setDaemon(True)
 reference_check_thread.start()
 camera_thread.start()
 
+def new_client(client, server):
+    print "helllooooo"
 
-
+server = WebsocketServer(5000)
+server.set_fn_new_client(new_client)
+server.run_forever()
 
 try:
         while True:
