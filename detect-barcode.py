@@ -8,10 +8,7 @@ import threading
 import os
 import zbar
 import Queue
-from flask import Flask, render_template, url_for, jsonify
-from flask_socketio import SocketIO, send, emit
 import json
-from pympler import muppy, summary
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 symbols_found = {}
@@ -20,8 +17,6 @@ capture_completed = threading.Event()
 object_in_system = threading.Event()
 q = Queue.Queue()
 dict_lock = threading.Lock()
-app = Flask(__name__)
-socketio = SocketIO(app)
 server_started = False
 
 database = {
@@ -34,6 +29,7 @@ database = {
         "060410014431" : {"name" : "Pretzels", "img-url" : "products/pretzel.jpg", "price": 3.99},
         "066721002297" : {"name": "Ritz Crackers", "img-url":"products/ritz.jpg", "price":1},
         "068100058925" : {"name": "Kraft Dinner", "img-url": "products/kd.jpg", "price": 1.99},
+        "066721002594" : {"name": "Kraft Dinner", "img-url": "products/triscuit.jpg", "price": 1.99},
         "Not Found" : {"name": "Item Not Found", "img-url":"product/default.png", "price": 0.00}
 }
 
@@ -41,11 +37,13 @@ def initialize_camera(i):
         # initializes camera using openCV
         # need to pass in an int for the camera we are choosing to initialize and it returns the camera object
         print i
+       
         cam = cv2.VideoCapture(i)
         if cam.isOpened():
                 cam.set(5, 8)
                 cam.set(3, 1280)
                 cam.set(4, 720)
+                
                 return cam
 
 def set_resolution(cam, x, y):
@@ -61,37 +59,36 @@ def test_capture(cam, timestamp):
 
 def capture(cam, timestamp, prefix):
         k = 0
-        print "hello"
         # runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
         global capture_completed
-        while True:
+        time_elapsed = 0
+        while True and (time_elapsed < 7):
+                curr_time = time.time()
+                time_elapsed = abs(timestamp - curr_time)
+                print "the time elapsed is %s" % time_elapsed
                 if not timestamp in barcode_validated.keys():
-                # if we are supposed to be taking pictures right now    
-                # print 'before starting image array length is %s' % len(im_array)
                         if cam.isOpened():
                                 capture_completed.clear()
                                 retval, im = cam.read()
                                 threading.Thread(target=export_photos, args=(im,timestamp,prefix, k)).start()
                                 capture_completed.set()
                                 k += 1
+                                
 
 def wait_for_object_to_be_present(): 
         while True: 
                 timestamp = time.time()
-                im = test_capture(cameras[0], timestamp)
+                im = test_capture(cameras[4], timestamp)
                 is_object_present = check_if_object_present(im)
                 if is_object_present:
 
                         object_in_system.clear() #clearing removes the old object from the system so the other camera threads start waiting again
                         q.put(timestamp) #now we are putting the timestamp of the new object into the queue
                         print "qsize is %d" % q.qsize() #should be 1
+                        print "NEW OBJECT COMING IN"
                         object_in_system.set() #by calling .set(), we are letting the other camreras know that are 
                         #waiting for an object that an object is here (CHECK LINE 69)
-                        time.sleep(2)
-
-                        all_objects = muppy.get_objects()
-                        curr_summary = summary.summarize(all_objects)
-                        print curr_summary
+                        time.sleep(7)
 
 def start_camera_threads():
         #starting other camera threads
@@ -104,22 +101,30 @@ def start_camera_threads():
                         if not q.empty():
                                 #get the current object timestamp
                                 curr_timestamp = q.get()
-
                                 print "qsize is now %d" % q.qsize() #should be 0, calling get removes it from the queue
 
                                 #HERE IS WHERE YOU ADD THE THREADS FOR ADDITIONAL CAMERAS, depending on which one you are using for 
                                 # actual detection, and which one is only for checking object presence
                                 print "starting 1"
-                                t1 = threading.Thread(target=capture, args=(cameras[1],curr_timestamp, "cam1"))
+                                t1 = threading.Thread(target=capture, args=(cameras[2],curr_timestamp, "cam1"))
                                 t1.start()
-                                time.sleep(10)
+                                t1.join(1)
+
+                                print "the 1st thread is alive %s" % t1.isAlive()
                                 print "starting 2"
-                                t2 = threading.Thread(target=capture, args=(cameras[2],curr_timestamp, "cam2"))
+                                t2 = threading.Thread(target=capture, args=(cameras[3],curr_timestamp, "cam2"))
                                 t2.start()
-                                time.sleep(10)
+                                t2.join(1)
+
+                                print "the 2nd thread is alive %s" % t2.isAlive()
                                 print "starting 3"
-                                t3.threading.Thread(target=capture, args=(cameras[0],curr_timestamp, "cam3"))
+                                t3 = threading.Thread(target=capture, args=(cameras[0],curr_timestamp, "cam3"))
                                 t3.start()
+                                t3.join(1)
+
+                                print "the 3rd thread is alive %s" % t3.isAlive()
+
+                                print "num threads alive is %s" % threading.enumerate()
 
 
 def export_photos(im, timestamp, prefix, k):
@@ -150,8 +155,8 @@ def scan_images(path, filename, timestamp, prefix):
                 # print width
                 # print height
 
-                raw = pil.tobytes() #for MAC/other version of python
-                # raw = pil.tostring() #based on python version 2.7.8
+                # raw = pil.tobytes() #for MAC/other version of python
+                raw = pil.tostring() #based on python version 2.7.8
                 image = zbar.Image(width, height, 'Y800', raw)
 
                 dict_lock.acquire()
@@ -179,11 +184,12 @@ def scan_images(path, filename, timestamp, prefix):
 def check_if_object_present(im):
         #returns whether photo-gate is blocked
 
-        im2 = im[135:145,295:345] # crop image to around the pixels we want to look at
+        im2 = im[283:326,611:714] # crop image to around the pixels we want to look at
         path = "pixel"
+        cv2.imwrite(path + '/' + "im.png", im)
         cv2.imwrite(path + '/' + "crop.png", im2)
         
-        threshold = 25  #this is the range that we want the colour to be between (its too high right now, lower this)
+        threshold = 50  #this is the range that we want the colour to be between (its too high right now, lower this)
         pixels = {}
         object_present = False #usually, an object isn't there
         
@@ -200,12 +206,14 @@ def check_if_object_present(im):
                         # if its less than 25 (threshold), that means the object isnt there and we can still see the flag
                         
                         colour_difference = pixels[i][j] - references[i][j]
+                        
                         if abs(colour_difference) >= threshold:
+                                print colour_difference
                                 object_present = True
 
         time.sleep(3) #set delays to help with testing
-        return True #help with testing - comment out when actually using the photo flag
-        # return object_present #- UNCOMMENT WHEN NOT TESTING ANYMORE
+        #return True #help with testing - comment out when actually using the photo flag
+        return object_present #- UNCOMMENT WHEN NOT TESTING ANYMORE
 
 def product_lookup(barcode):
         print barcode
@@ -217,27 +225,6 @@ def product_lookup(barcode):
                         cv2.waitKey(0) #may need to remove this because it may puase the code
                 else:
                         print "Image for this barcode does not exist yet"
-@app.route("/")
-def index():
-    print "hello"
-    return render_template('index.html',)
-
-def handle_new_detection(barcode): 
-    print "i've detected something, trying to emit"
-    data = construct_product_data(barcode)
-    socketio.emit('json', data, namespace="/test")
-    print "emitted the socket event"
-
-@socketio.on('request', namespace="/test")
-def handle_message(data):
-    global server_started
-    server_started =  True
-    data = {}
-    print (data)
-
-@socketio.on('checking', namespace="/test")
-def handle_check():
-    socketio.emit('json', namespace="/test")
 
 def construct_product_data(barcode):
     return database[barcode]
@@ -263,7 +250,7 @@ def add_barcode_to_database(barcode):
     database[barcode] = {"name": "None", "img-url": "products/default.png", "price": "3.99"}
 
 cameras =  {}
-for i in range(0,2):
+for i in range(0,5):
         cameras[i] = initialize_camera(i)
         print cameras
 

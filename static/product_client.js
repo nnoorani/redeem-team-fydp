@@ -1,8 +1,7 @@
 ws = new WebSocket("ws://localhost:5000/");
 var productList = $("div.product-list"),
 productImage = $(".product-image > img"),
-cueBox = $(".cue-box"),
-objectEntered = True;
+cueBox = $(".cue-box");
   // Set event handlers.
 ws.onopen = function() {
     console.log("onopen");
@@ -12,20 +11,9 @@ ws.onmessage = function(product_json) {
     // e.data contains received string.
     var product = JSON.parse(product_json.data);
     console.log(product);
-
-    if (product.name) {
     	// this is if it's actual product info
-    	display_just_scanned(product);
-    	display_product_info(product);
-    	if (objectEntered) {
-    		barcodeFound = True
-    	}
-    }
-
-    if (product.objectEntered) {
-    	objectEntered = True;
-    	barcodeFound = False
-    }
+	display_just_scanned(product);
+	display_product_info(product);
 };
   
 ws.onclose = function() {
@@ -54,6 +42,8 @@ function construct_product_html(product) {
 	product_html_string = '<div class="product-row col-md-12">' +
 	    '<div class="product-name col-md-10">'+product.name+'</div>' + 
 	    '<div class="product-price col-md-2">'+product.price+'</div></div>';
+
+	return product_html_string
 };
 
 function addToTotal(amount) {
@@ -72,7 +62,6 @@ function handle_missed_detection() {
 setInterval(function(){
 	if (cueBox.hasClass('wait')) {
 		// check if we missed the last detection
-		if barcodeFound {
 			cueBox.addClass('go');
 			cueBox.html("Place next item behind the black line")
 			setTimeout(function(){
@@ -83,9 +72,9 @@ setInterval(function(){
 				}
 			}, 3000);
 			cueBox.removeClass('wait');
-		} else if (!barcodeFound) {
-			cueBox.addClass('missed');
-			cueBox.html("The last item was not found, please scan it again");
-		}
-	}
+		} 
+		// else if (!barcodeFound) {
+		// 	cueBox.addClass('missed');
+		// 	cueBox.html("The last item was not found, please scan it again");
+		// }
 }, 6000);
