@@ -11,6 +11,7 @@ import Queue
 from flask import Flask, render_template, url_for, jsonify
 from flask_socketio import SocketIO, send, emit
 import json
+from pympler import muppy, summary
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 symbols_found = {}
@@ -87,6 +88,10 @@ def wait_for_object_to_be_present():
                         object_in_system.set() #by calling .set(), we are letting the other camreras know that are 
                         #waiting for an object that an object is here (CHECK LINE 69)
                         time.sleep(2)
+
+                        all_objects = muppy.get_objects()
+                        curr_summary = summary.summarize(all_objects)
+                        print curr_summary
 
 def start_camera_threads():
         #starting other camera threads
