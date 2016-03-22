@@ -215,6 +215,7 @@ def check_if_object_present(im):
                                 object_blocking = True
 
         if object_blocking:
+                #print "object is blocking"
                 if ready:
                         print "this object is new"
                         ready = False
@@ -223,6 +224,7 @@ def check_if_object_present(im):
                         returnn = False
                         
         else:
+                #print "i should not be called"
                 ready = True
                 returnn = False
 
