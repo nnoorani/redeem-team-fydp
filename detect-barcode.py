@@ -20,7 +20,6 @@ dict_lock = threading.Lock()
 server_started = False
 field_was_emptied = True #usually, an object isn't there
 object_blocking = False
-ready_for_new_folder = True
 ready = True
 
 database = {
@@ -65,7 +64,7 @@ def capture(cam, timestamp, prefix):
         # runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
         global capture_completed
         time_elapsed = 0
-        while True and (time_elapsed < 30):
+        while True and (time_elapsed < 5):
                 curr_time = time.time()
                 time_elapsed = abs(timestamp - curr_time)
                 #print "the time elapsed is %s" % time_elapsed
@@ -76,7 +75,7 @@ def capture(cam, timestamp, prefix):
                                 threading.Thread(target=export_photos, args=(im,timestamp,prefix, k)).start()
                                 capture_completed.set()
                                 k += 1
-                                #time.sleep(0.5)
+                                time.sleep(0.5)
                                 
 
 def wait_for_object_to_be_present(): 
@@ -113,19 +112,19 @@ def start_camera_threads():
                                 #print "starting 1"
                                 t1 = threading.Thread(target=capture, args=(cameras[2],curr_timestamp, "cam1"))
                                 t1.start()
-                                t1.join(7)
+                                t1.join(1)
 
                                 #print "the 1st thread is alive %s" % t1.isAlive()
                                 #print "starting 2"
                                 t2 = threading.Thread(target=capture, args=(cameras[3],curr_timestamp, "cam2"))
                                 t2.start()
-                                t2.join(7)
+                                t2.join(1)
 
                                 #print "the 2nd thread is alive %s" % t2.isAlive()
                                 #print "starting 3"
                                 t3 = threading.Thread(target=capture, args=(cameras[0],curr_timestamp, "cam3"))
                                 t3.start()
-                                t3.join(7)
+                                t3.join(1)
 
                                 #print "the 3rd thread is alive %s" % t3.isAlive()
 
@@ -190,15 +189,15 @@ def check_if_object_present(im):
         global ready
         #returns whether photo-gate is blocked
         #print ready
-        im2 = im[410:430,620:715] # crop image to around the pixels we want to look at
+        im2 = im[405:425,595:690] # crop image to around the pixels we want to look at
         path = "pixel"
-        #cv2.imwrite(path + '/' + "im.png", im)
+        cv2.imwrite(path + '/' + "im.png", im)
         cv2.imwrite(path + '/' + "crop.png", im2)
         object_blocking = False
         
-        threshold = 40  #this is the range that we want the colour to be between (its too high right now, lower this)
+        threshold = 50  #this is the range that we want the colour to be between (its too high right now, lower this)
         pixels = {}
-        references = [[75,115,130],[45,15,100],[130,70,30]] #this is the colours we EXPECT them to be
+        references = [[200,140,90],[120,100,185],[120,190,200]] #this is the colours we EXPECT them to be
 
         #im[x,y] where x is the row (so going down) and y are columns are going across
         # im[x,y] is the coordinates of where we are checking EACH of the three colours in the flag - NEEDS UPDATING ONCE IN SYSTEM
