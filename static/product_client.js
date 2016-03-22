@@ -15,14 +15,20 @@ ws.onmessage = function(json) {
     console.log(data);
     	// this is if it's actual product info
 	if (data.name) {
+		barcodeFound = true;
 		// if it has a name, assume its a product
 		display_just_scanned(product);
 		display_product_info(product);
 	} else if (data.objectEntered) {
 		objectEntered = true;
+		barcodeFound = false;
+		displayWait();
 	} else if (data.objectLeft) {
+		if (objectEntered && !barcodeFound) {
+			handle_missed_detection();
+		}
 		objectEntered = false;
-		handle_missed_detection();
+		displayCue();
 	}
 };
   
@@ -69,22 +75,44 @@ function handle_missed_detection() {
 	cueBox.html("Oops! The last item was not scanned. Please re-enter the item into the scanner");
 }
 
-setInterval(function(){
+function displayCue() {
 	if (cueBox.hasClass('wait')) {
 		// check if we missed the last detection
-			cueBox.addClass('go');
-			cueBox.html("Place next item behind the black line")
-			setTimeout(function(){
-				if (cueBox.hasClass('go')) {
-					cueBox.addClass('wait');
-					cueBox.html("Please wait to place your item")
-					cueBox.removeClass('go');
-				}
-			}, 3000);
-			cueBox.removeClass('wait');
-		} 
-		// else if (!barcodeFound) {
-		// 	cueBox.addClass('missed');
-		// 	cueBox.html("The last item was not found, please scan it again");
-		// }
-}, 6000);
+		cueBox.addClass('go');
+		cueBox.html("Place next item behind the black line")
+	} else {
+		cueBox.addClass('go');
+		cueBox.html("Place next item behind the black line")	
+	}
+}
+
+function displayWait() {
+	if (cueBox.hasClass('go')) {
+		cueBox.addClass('wait');
+		cueBox.html("Please wait to place your item")
+		cueBox.removeClass('go');
+	} else {
+		cueBox.addClass('wait');
+		cueBox.html("Please wait to place your item");
+	}
+}
+
+// setInterval(function(){
+// 	if (cueBox.hasClass('wait')) {
+// 		// check if we missed the last detection
+// 			cueBox.addClass('go');
+// 			cueBox.html("Place next item behind the black line")
+// 			setTimeout(function(){
+// 				if (cueBox.hasClass('go')) {
+// 					cueBox.addClass('wait');
+// 					cueBox.html("Please wait to place your item")
+// 					cueBox.removeClass('go');
+// 				}
+// 			}, 3000);
+// 			cueBox.removeClass('wait');
+// 		} 
+// 		// else if (!barcodeFound) {
+// 		// 	cueBox.addClass('missed');
+// 		// 	cueBox.html("The last item was not found, please scan it again");
+// 		// }
+// }, 6000);
