@@ -76,7 +76,9 @@ def capture(cam, timestamp, prefix):
                                 capture_completed.set()
                                 k += 1
                                 time.sleep(0.5)
-                                
+        if time_elapsed > 10:
+            left_message = json.dumps({"objectLeft":True})
+            server.send_message_to_all(left_message)
 
 def wait_for_object_to_be_present(): 
         while True:
@@ -86,6 +88,8 @@ def wait_for_object_to_be_present():
                 is_object_present = check_if_object_present(im)
                 #print is_object_present
                 if is_object_present:
+                        entered_message = json.dumps({"objectEntered":True})
+                        server.send_message_to_all(entered_message)
                         object_in_system.clear() #clearing removes the old object from the system so the other camera threads start waiting again
                         q.put(timestamp) #now we are putting the timestamp of the new object into the queue
                         #print "qsize is %d" % q.qsize() #should be 1
@@ -231,24 +235,9 @@ def check_if_object_present(im):
         #time.sleep(10)
         #return True
 
-def product_lookup(barcode):
-        print barcode
-        if barcode:
-                if database.has_key(barcode):
-                        print database[barcode]
-                        product_img = cv2.imread(database[barcode]);
-                        cv2.imshow('product', product_img)
-                        cv2.waitKey(0) #may need to remove this because it may puase the code
-                else:
-                        print "Image for this barcode does not exist yet"
-
 def construct_product_data(barcode):
     return database[barcode]
 
-def start_server():
-    if __name__ == "__main__":
-        print "im starting the server"
-        socketio.run(app)
 
 def handle_product_lookup(barcode):
     data = construct_barcode_data(barcode)

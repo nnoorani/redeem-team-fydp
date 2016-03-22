@@ -1,19 +1,29 @@
 ws = new WebSocket("ws://localhost:5000/");
 var productList = $("div.product-list"),
 productImage = $(".product-image > img"),
-cueBox = $(".cue-box");
+productImageContainer = $(".product-image-container"),
+cueBox = $(".cue-box"),
+objectEntered;
   // Set event handlers.
 ws.onopen = function() {
     console.log("onopen");
 };
   
-ws.onmessage = function(product_json) {
+ws.onmessage = function(json) {
     // e.data contains received string.
-    var product = JSON.parse(product_json.data);
-    console.log(product);
+    var data = JSON.parse(json.data);
+    console.log(data);
     	// this is if it's actual product info
-	display_just_scanned(product);
-	display_product_info(product);
+	if (data.name) {
+		// if it has a name, assume its a product
+		display_just_scanned(product);
+		display_product_info(product);
+	} else if (data.objectEntered) {
+		objectEntered = true;
+	} else if (data.objectLeft) {
+		objectEntered = false;
+		handle_missed_detection();
+	}
 };
   
 ws.onclose = function() {
@@ -56,7 +66,7 @@ function addToTotal(amount) {
 }
 
 function handle_missed_detection() {
-
+	cueBox.html("Oops! The last item was not scanned. Please re-enter the item into the scanner");
 }
 
 setInterval(function(){
