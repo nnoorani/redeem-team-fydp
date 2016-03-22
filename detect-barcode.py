@@ -18,6 +18,10 @@ object_in_system = threading.Event()
 q = Queue.Queue()
 dict_lock = threading.Lock()
 server_started = False
+field_was_emptied = True #usually, an object isn't there
+object_blocking = False
+ready_for_new_folder = True
+ready = True
 
 database = {
         "6820020094" : {"name": "Chocolate Milk", "img-url": "products/chocolate-milk.jpg", "price": 2.99},
@@ -41,9 +45,8 @@ def initialize_camera(i):
         cam = cv2.VideoCapture(i)
         if cam.isOpened():
                 cam.set(5, 8)
-                cam.set(3, 1280)
-                cam.set(4, 720)
-                
+                cam.set(3, 5168) #1280
+                cam.set(4, 2907) #720
                 return cam
 
 def set_resolution(cam, x, y):
@@ -62,7 +65,7 @@ def capture(cam, timestamp, prefix):
         # runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
         global capture_completed
         time_elapsed = 0
-        while True and (time_elapsed < 7):
+        while True and (time_elapsed < 5):
                 curr_time = time.time()
                 time_elapsed = abs(timestamp - curr_time)
                 print "the time elapsed is %s" % time_elapsed
@@ -73,22 +76,24 @@ def capture(cam, timestamp, prefix):
                                 threading.Thread(target=export_photos, args=(im,timestamp,prefix, k)).start()
                                 capture_completed.set()
                                 k += 1
+                                #time.sleep(0.5)
                                 
 
 def wait_for_object_to_be_present(): 
-        while True: 
+        while True:
+                time.sleep(3)
                 timestamp = time.time()
                 im = test_capture(cameras[4], timestamp)
                 is_object_present = check_if_object_present(im)
+                #print is_object_present
                 if is_object_present:
-
                         object_in_system.clear() #clearing removes the old object from the system so the other camera threads start waiting again
                         q.put(timestamp) #now we are putting the timestamp of the new object into the queue
                         print "qsize is %d" % q.qsize() #should be 1
                         print "NEW OBJECT COMING IN"
                         object_in_system.set() #by calling .set(), we are letting the other camreras know that are 
                         #waiting for an object that an object is here (CHECK LINE 69)
-                        time.sleep(7)
+                        
 
 def start_camera_threads():
         #starting other camera threads
@@ -182,23 +187,23 @@ def scan_images(path, filename, timestamp, prefix):
                 dict_lock.release()
 
 def check_if_object_present(im):
+        global ready
         #returns whether photo-gate is blocked
-
-        im2 = im[283:326,611:714] # crop image to around the pixels we want to look at
+        #print ready
+        im2 = im[410:430,620:715] # crop image to around the pixels we want to look at
         path = "pixel"
-        cv2.imwrite(path + '/' + "im.png", im)
+        #cv2.imwrite(path + '/' + "im.png", im)
         cv2.imwrite(path + '/' + "crop.png", im2)
+        object_blocking = False
         
-        threshold = 50  #this is the range that we want the colour to be between (its too high right now, lower this)
+        threshold = 100  #this is the range that we want the colour to be between (its too high right now, lower this)
         pixels = {}
-        object_present = False #usually, an object isn't there
-        
-        references = [[23,82,118],[15,0,86],[58,27,0]] #this is the colours we EXPECT them to be
+        references = [[108,191,221],[89,60,185],[236,133,79]] #this is the colours we EXPECT them to be
 
         #im[x,y] where x is the row (so going down) and y are columns are going across
         # im[x,y] is the coordinates of where we are checking EACH of the three colours in the flag - NEEDS UPDATING ONCE IN SYSTEM
         # im[x,y] returns the BGR colour at that coordinate
-        pixels = [im2[6,6], im2[6,25], im2[6,40]]
+        pixels = [im2[10,15], im2[10,50], im2[10,85]]
 
         for i in range(0,3):
                 for j in range(0,3):
@@ -206,14 +211,24 @@ def check_if_object_present(im):
                         # if its less than 25 (threshold), that means the object isnt there and we can still see the flag
                         
                         colour_difference = pixels[i][j] - references[i][j]
-                        
                         if abs(colour_difference) >= threshold:
-                                print colour_difference
-                                object_present = True
+                                object_blocking = True
 
-        time.sleep(3) #set delays to help with testing
-        #return True #help with testing - comment out when actually using the photo flag
-        return object_present #- UNCOMMENT WHEN NOT TESTING ANYMORE
+        if object_blocking:
+                if ready:
+                        print "this object is new"
+                        ready = False
+                        returnn =  True
+                else:
+                        returnn = False
+                        
+        else:
+                ready = True
+                returnn = False
+
+        return returnn
+        #time.sleep(10)
+        #return True
 
 def product_lookup(barcode):
         print barcode
