@@ -65,10 +65,10 @@ def capture(cam, timestamp, prefix):
         # runs a loop to take pictures, continuously going until KeyboardInterrupt (Ctrl+C)
         global capture_completed
         time_elapsed = 0
-        while True and (time_elapsed < 5):
+        while True and (time_elapsed < 30):
                 curr_time = time.time()
                 time_elapsed = abs(timestamp - curr_time)
-                print "the time elapsed is %s" % time_elapsed
+                #print "the time elapsed is %s" % time_elapsed
                 if not timestamp in barcode_validated.keys():
                         if cam.isOpened():
                                 capture_completed.clear()
@@ -81,7 +81,7 @@ def capture(cam, timestamp, prefix):
 
 def wait_for_object_to_be_present(): 
         while True:
-                time.sleep(3)
+                #time.sleep(3)
                 timestamp = time.time()
                 im = test_capture(cameras[4], timestamp)
                 is_object_present = check_if_object_present(im)
@@ -89,7 +89,7 @@ def wait_for_object_to_be_present():
                 if is_object_present:
                         object_in_system.clear() #clearing removes the old object from the system so the other camera threads start waiting again
                         q.put(timestamp) #now we are putting the timestamp of the new object into the queue
-                        print "qsize is %d" % q.qsize() #should be 1
+                        #print "qsize is %d" % q.qsize() #should be 1
                         print "NEW OBJECT COMING IN"
                         object_in_system.set() #by calling .set(), we are letting the other camreras know that are 
                         #waiting for an object that an object is here (CHECK LINE 69)
@@ -106,30 +106,30 @@ def start_camera_threads():
                         if not q.empty():
                                 #get the current object timestamp
                                 curr_timestamp = q.get()
-                                print "qsize is now %d" % q.qsize() #should be 0, calling get removes it from the queue
+                                #print "qsize is now %d" % q.qsize() #should be 0, calling get removes it from the queue
 
                                 #HERE IS WHERE YOU ADD THE THREADS FOR ADDITIONAL CAMERAS, depending on which one you are using for 
                                 # actual detection, and which one is only for checking object presence
-                                print "starting 1"
+                                #print "starting 1"
                                 t1 = threading.Thread(target=capture, args=(cameras[2],curr_timestamp, "cam1"))
                                 t1.start()
-                                t1.join(1)
+                                t1.join(7)
 
-                                print "the 1st thread is alive %s" % t1.isAlive()
-                                print "starting 2"
+                                #print "the 1st thread is alive %s" % t1.isAlive()
+                                #print "starting 2"
                                 t2 = threading.Thread(target=capture, args=(cameras[3],curr_timestamp, "cam2"))
                                 t2.start()
-                                t2.join(1)
+                                t2.join(7)
 
-                                print "the 2nd thread is alive %s" % t2.isAlive()
-                                print "starting 3"
+                                #print "the 2nd thread is alive %s" % t2.isAlive()
+                                #print "starting 3"
                                 t3 = threading.Thread(target=capture, args=(cameras[0],curr_timestamp, "cam3"))
                                 t3.start()
-                                t3.join(1)
+                                t3.join(7)
 
-                                print "the 3rd thread is alive %s" % t3.isAlive()
+                                #print "the 3rd thread is alive %s" % t3.isAlive()
 
-                                print "num threads alive is %s" % threading.enumerate()
+                                #print "num threads alive is %s" % threading.enumerate()
 
 
 def export_photos(im, timestamp, prefix, k):
@@ -196,9 +196,9 @@ def check_if_object_present(im):
         cv2.imwrite(path + '/' + "crop.png", im2)
         object_blocking = False
         
-        threshold = 100  #this is the range that we want the colour to be between (its too high right now, lower this)
+        threshold = 40  #this is the range that we want the colour to be between (its too high right now, lower this)
         pixels = {}
-        references = [[108,191,221],[89,60,185],[236,133,79]] #this is the colours we EXPECT them to be
+        references = [[75,115,130],[45,15,100],[130,70,30]] #this is the colours we EXPECT them to be
 
         #im[x,y] where x is the row (so going down) and y are columns are going across
         # im[x,y] is the coordinates of where we are checking EACH of the three colours in the flag - NEEDS UPDATING ONCE IN SYSTEM
@@ -217,7 +217,7 @@ def check_if_object_present(im):
         if object_blocking:
                 #print "object is blocking"
                 if ready:
-                        print "this object is new"
+                        #print "this object is new"
                         ready = False
                         returnn =  True
                 else:
